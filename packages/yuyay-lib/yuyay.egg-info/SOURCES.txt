@@ -1,0 +1,8 @@
+pyproject.toml
+tests/test_archetypes.py
+yuyay/__init__.py
+yuyay/archetypes.py
+yuyay.egg-info/PKG-INFO
+yuyay.egg-info/SOURCES.txt
+yuyay.egg-info/dependency_links.txt
+yuyay.egg-info/top_level.txt
