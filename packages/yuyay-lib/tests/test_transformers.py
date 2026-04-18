@@ -27,7 +27,10 @@ def test_transformer_has_question() -> None:
 
 def test_summary_format() -> None:
     transformer = ALL_TRANSFORMERS[0]
-    assert transformer.summary() == "[1a] Does the idea, good, service or issue serve my highest purpose?"
+    assert (
+        transformer.summary()
+        == "[1a] Does the idea, good, service or issue serve my highest purpose?"
+    )
 
 
 def test_summary_returns_str() -> None:

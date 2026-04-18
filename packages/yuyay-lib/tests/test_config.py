@@ -52,7 +52,9 @@ def test_load_config_reads_debug_true(monkeypatch: pytest.MonkeyPatch) -> None:
     assert config.debug is True
 
 
-def test_load_config_reads_debug_case_insensitive(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_load_config_reads_debug_case_insensitive(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """load_config handles uppercase YUYAY_DEBUG value."""
     monkeypatch.setenv("YUYAY_DEBUG", "TRUE")
     config = load_config()
