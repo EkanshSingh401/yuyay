@@ -46,7 +46,9 @@ def test_po_challenge_returns_string() -> None:
 
 def test_po_challenge_format() -> None:
     result = po_challenge("profit always comes first")
-    assert result == "PO: What if the opposite of 'profit always comes first' were true?"
+    assert (
+        result == "PO: What if the opposite of 'profit always comes first' were true?"
+    )
 
 
 def test_po_challenge_includes_assumption() -> None:

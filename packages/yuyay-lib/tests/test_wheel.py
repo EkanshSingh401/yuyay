@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-from yuyay.wheel import (
-    WHEEL_SECTORS,
-    WheelResult,
-    evaluate_whole_system,
-    get_sector,
-)
+from yuyay.wheel import WHEEL_SECTORS, WheelResult, evaluate_whole_system, get_sector
 
 
 def test_wheel_sectors_length() -> None:

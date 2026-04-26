@@ -1,11 +1,6 @@
 """Tests for the YUYAY archetypes module."""
 
-from yuyay.archetypes import (
-    ALL_ARCHETYPES,
-    SEER,
-    Archetype,
-    get_archetype_by_name,
-)
+from yuyay.archetypes import ALL_ARCHETYPES, SEER, Archetype, get_archetype_by_name
 
 
 class TestArchetype:
