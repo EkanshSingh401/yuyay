@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import archetypes, evaluate, transformers
+from app.routers import archetypes, evaluate, transformers, wheel
 
 app = FastAPI(
     title="YUYAY Intelligence API",
@@ -26,6 +26,7 @@ app.add_middleware(
 app.include_router(archetypes.router)
 app.include_router(transformers.router)
 app.include_router(evaluate.router)
+app.include_router(wheel.router)
 
 
 @app.get("/api/v1/health")
