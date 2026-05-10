@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.db import init_db
 from app.routers import archetypes, evaluate, metrics, sessions, transformers, wheel
 
 app = FastAPI(
@@ -22,6 +23,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Initialize the database on application startup."""
+    await init_db()
+
 
 app.include_router(archetypes.router)
 app.include_router(transformers.router)
