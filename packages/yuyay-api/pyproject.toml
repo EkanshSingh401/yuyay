@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yuyay-api"
+version = "0.1.0"
+description = "YUYAY Intelligence Framework — FastAPI Backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "pydantic>=2.0.0",
+    "yuyay>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=26.3.1",
+    "ruff>=0.15.9",
+    "mypy>=1.20.0",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.1.0",
+    "httpx>=0.28.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+strict = true
+
+[tool.ruff]
+line-length = 88
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
