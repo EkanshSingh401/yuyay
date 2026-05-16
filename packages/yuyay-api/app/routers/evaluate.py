@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 from yuyay.exceptions import InvalidResponseError
 from yuyay.questionnaire import process_responses
+
+from app.db import get_session
+from app.models import EvaluationSession
 
 router = APIRouter(prefix="/api/v1", tags=["evaluate"])
 
@@ -24,6 +30,7 @@ class EvaluateResponse(BaseModel):
     """Response body for the evaluate endpoint.
 
     Attributes:
+        session_id: The id of the saved evaluation session.
         yes_count: Number of YES responses.
         no_count: Number of NO responses.
         po_count: Number of PO responses.
@@ -32,6 +39,7 @@ class EvaluateResponse(BaseModel):
         summary: Human readable summary string.
     """
 
+    session_id: str
     yes_count: int
     no_count: int
     po_count: int
@@ -41,14 +49,18 @@ class EvaluateResponse(BaseModel):
 
 
 @router.post("/evaluate", response_model=EvaluateResponse)
-async def evaluate(request: EvaluateRequest) -> EvaluateResponse:
+async def evaluate(
+    request: EvaluateRequest,
+    db: AsyncSession = Depends(get_session),
+) -> EvaluateResponse:
     """Submit questionnaire responses and return YES/NO/PO analysis.
 
     Args:
         request: The request body containing responses dict.
+        db: The database session injected by FastAPI.
 
     Returns:
-        An EvaluateResponse with counts, flags, and summary.
+        An EvaluateResponse with session id, counts, flags, and summary.
 
     Raises:
         HTTPException: 422 if any response value is invalid.
@@ -57,7 +69,23 @@ async def evaluate(request: EvaluateRequest) -> EvaluateResponse:
         report = process_responses(request.responses)
     except InvalidResponseError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+
+    session = EvaluationSession(
+        status="complete",
+        responses=request.responses,
+        yes_count=report.yes_count,
+        no_count=report.no_count,
+        po_count=report.po_count,
+        total_responses=report.total,
+        flags=report.flags,
+        completed_at=datetime.utcnow(),
+    )
+    db.add(session)
+    await db.commit()
+    await db.refresh(session)
+
     return EvaluateResponse(
+        session_id=session.id,
         yes_count=report.yes_count,
         no_count=report.no_count,
         po_count=report.po_count,
