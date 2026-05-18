@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
+from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1", tags=["metrics"])
 
@@ -23,7 +25,9 @@ class MetricsResponse(BaseModel):
 
 
 @router.get("/metrics")
-async def get_metrics() -> MetricsResponse:
+async def get_metrics(
+    current_user: str = Depends(get_current_user),
+) -> MetricsResponse:
     """Return Prometheus-compatible metrics.
 
     Returns:

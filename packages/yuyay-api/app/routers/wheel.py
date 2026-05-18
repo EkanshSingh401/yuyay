@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from yuyay.wheel import WHEEL_SECTORS, evaluate_whole_system, get_sector
+
+from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/wheel", tags=["wheel"])
 
@@ -42,7 +44,10 @@ class WheelSynthesizeResponse(BaseModel):
 
 
 @router.post("/synthesize")
-async def synthesize(request: WheelSynthesizeRequest) -> WheelSynthesizeResponse:
+async def synthesize(
+    request: WheelSynthesizeRequest,
+    current_user: str = Depends(get_current_user),
+) -> WheelSynthesizeResponse:
     """Run the Co-Creation Wheel on a set of sectors.
 
     Args:

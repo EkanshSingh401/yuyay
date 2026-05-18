@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from yuyay.transformers import ALL_TRANSFORMERS, get_transformer_by_id
+
+from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/transformers", tags=["transformers"])
 
@@ -19,7 +21,11 @@ async def list_transformers() -> list[dict[str, str]]:
 
 
 @router.post("/run")
-async def run_transformer(transformer_id: str, input_text: str) -> dict[str, str]:
+async def run_transformer(
+    transformer_id: str,
+    input_text: str,
+    current_user: str = Depends(get_current_user),
+) -> dict[str, str]:
     """Run a transformer question against input text.
 
     Args:

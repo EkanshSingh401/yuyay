@@ -12,6 +12,7 @@ from yuyay.questionnaire import process_responses
 
 from app.db import get_session
 from app.models import EvaluationSession
+from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1", tags=["evaluate"])
 
@@ -52,6 +53,7 @@ class EvaluateResponse(BaseModel):
 async def evaluate(
     request: EvaluateRequest,
     db: AsyncSession = Depends(get_session),
+    current_user: str = Depends(get_current_user),
 ) -> EvaluateResponse:
     """Submit questionnaire responses and return YES/NO/PO analysis.
 
