@@ -10,6 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 from app.db import init_db
+from app.logger import configure_logging, get_logger
 from app.routers import (
     archetypes,
     auth,
@@ -20,6 +21,7 @@ from app.routers import (
     wheel,
 )
 
+logger = get_logger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
@@ -45,8 +47,10 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    """Initialize the database on application startup."""
+    """Initialize the database and logging on application startup."""
+    configure_logging()
     await init_db()
+    logger.info("startup_complete", version="0.1.0")
 
 
 app.include_router(auth.router)

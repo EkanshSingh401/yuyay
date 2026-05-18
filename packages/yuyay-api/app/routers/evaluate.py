@@ -11,9 +11,11 @@ from yuyay.exceptions import InvalidResponseError
 from yuyay.questionnaire import process_responses
 
 from app.db import get_session
+from app.logger import get_logger
 from app.models import EvaluationSession
 from app.routers.auth import get_current_user
 
+logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["evaluate"])
 
 
@@ -85,6 +87,16 @@ async def evaluate(
     db.add(session)
     await db.commit()
     await db.refresh(session)
+
+    logger.info(
+        "evaluation_complete",
+        session_id=session.id,
+        yes_count=report.yes_count,
+        no_count=report.no_count,
+        po_count=report.po_count,
+        total=report.total,
+        user=current_user,
+    )
 
     return EvaluateResponse(
         session_id=session.id,
