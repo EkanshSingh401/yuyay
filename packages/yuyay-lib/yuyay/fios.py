@@ -1,0 +1,375 @@
+"""FIOS — Foundational Intelligent OS for the YUYAY Intelligence Framework.
+
+FIOS is an LLM orchestration layer that injects YUYAY framework context into
+any LLM provider query and evaluates the response against YUYAY coherence metrics.
+"""
+
+from __future__ import annotations
+
+import abc
+import time
+from dataclasses import dataclass, field
+
+from yuyay.archetypes import ALL_ARCHETYPES
+from yuyay.transformers import ALL_TRANSFORMERS
+
+
+@dataclass
+class FIOSConfig:
+    """Configuration for a FIOS provider.
+
+    Attributes:
+        provider: The LLM provider name — anthropic, openai, or google.
+        model: The specific model to use.
+        max_tokens: Maximum tokens in the response.
+        temperature: Sampling temperature from 0.0 to 1.0.
+        api_key: The API key for the provider.
+    """
+
+    provider: str
+    model: str
+    max_tokens: int = 1000
+    temperature: float = 0.7
+    api_key: str = ""
+
+
+@dataclass
+class FIOSResult:
+    """Result of a FIOS query.
+
+    Attributes:
+        provider: The LLM provider used.
+        model: The specific model used.
+        prompt: The full enriched prompt sent to the LLM.
+        response: The raw response from the LLM.
+        input_tokens: Number of input tokens used.
+        output_tokens: Number of output tokens used.
+        latency_ms: Time taken for the API call in milliseconds.
+        coherence_score: YUYAY coherence score from 0 to 100.
+        flags: List of coherence issues found in the response.
+    """
+
+    provider: str
+    model: str
+    prompt: str
+    response: str
+    input_tokens: int
+    output_tokens: int
+    latency_ms: float
+    coherence_score: int
+    flags: list[str] = field(default_factory=list)
+
+    @property
+    def total_tokens(self) -> int:
+        """Total tokens used in this query.
+
+        Returns:
+            Sum of input and output tokens.
+        """
+        return self.input_tokens + self.output_tokens
+
+    def summary(self) -> str:
+        """Return a formatted summary of this FIOS result.
+
+        Returns:
+            A string showing provider, tokens, latency, and coherence score.
+        """
+        return (
+            f"[{self.provider}/{self.model}] "
+            f"Tokens: {self.total_tokens} | "
+            f"Latency: {self.latency_ms:.0f}ms | "
+            f"Coherence: {self.coherence_score}/100"
+        )
+
+
+def build_yuyay_context() -> str:
+    """Build the YUYAY framework context string for prompt injection.
+
+    Combines all archetypes and transformer questions into a system context
+    that gets prepended to every LLM query.
+
+    Returns:
+        A formatted string containing the full YUYAY framework context.
+    """
+    archetype_context = "\n".join(f"- {a.name}: {a.function}" for a in ALL_ARCHETYPES)
+    transformer_context = "\n".join(
+        f"- [{t.id}] {t.question}" for t in ALL_TRANSFORMERS
+    )
+    return f"""You are operating within the YUYAY Intelligence Framework.
+
+YUYAY ARCHETYPES (12 dimensions of human potential):
+{archetype_context}
+
+TRANSFORMER QUESTIONS (apply these to your response):
+{transformer_context}
+
+When responding, consider all 12 archetype dimensions and apply the transformer
+questions to ensure your response serves the highest purpose, is wise, compassionate,
+and contributes to healing the planet. Use PO lateral thinking when facing uncertainty."""
+
+
+def evaluate_coherence(response: str) -> tuple[int, list[str]]:
+    """Evaluate a response against YUYAY coherence metrics.
+
+    Checks whether the response demonstrates awareness of key YUYAY concepts
+    like wisdom, compassion, purpose, and planetary healing.
+
+    Args:
+        response: The raw LLM response text to evaluate.
+
+    Returns:
+        A tuple of (score from 0 to 100, list of flags for missing concepts).
+    """
+    response_lower = response.lower()
+    score = 100
+    flags: list[str] = []
+
+    checks = [
+        ("purpose", ["purpose", "goal", "mission", "serve"]),
+        ("wisdom", ["wisdom", "wise", "reflect", "consider"]),
+        ("compassion", ["compassion", "empathy", "care", "mercy"]),
+        ("planetary", ["planet", "earth", "heal", "future", "generation"]),
+        ("balance", ["balance", "harmony", "whole", "system"]),
+    ]
+
+    for concept, keywords in checks:
+        if not any(kw in response_lower for kw in keywords):
+            score -= 20
+            flags.append(f"missing_{concept}")
+
+    return max(0, score), flags
+
+
+class LLMProvider(abc.ABC):
+    """Abstract base class for all FIOS LLM provider adapters.
+
+    All concrete provider implementations must inherit from this class
+    and implement the query method.
+    """
+
+    def __init__(self, config: FIOSConfig) -> None:
+        """Initialize the provider with a config.
+
+        Args:
+            config: The FIOSConfig for this provider.
+        """
+        self.config = config
+
+    @abc.abstractmethod
+    async def query(self, prompt: str) -> FIOSResult:
+        """Send a prompt to the LLM and return a FIOSResult.
+
+        Args:
+            prompt: The full enriched prompt to send.
+
+        Returns:
+            A FIOSResult with the response and metadata.
+        """
+        ...
+
+
+class AnthropicAdapter(LLMProvider):
+    """FIOS adapter for Anthropic Claude API."""
+
+    async def query(self, prompt: str) -> FIOSResult:
+        """Send a prompt to Claude and return a FIOSResult.
+
+        Args:
+            prompt: The full enriched prompt to send.
+
+        Returns:
+            A FIOSResult with Claude's response and token usage.
+        """
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=self.config.api_key)
+        context = build_yuyay_context()
+        full_prompt = f"{context}\n\nUser Query: {prompt}"
+
+        start = time.monotonic()
+        message = await client.messages.create(
+            model=self.config.model,
+            max_tokens=self.config.max_tokens,
+            messages=[{"role": "user", "content": full_prompt}],
+        )
+        latency_ms = (time.monotonic() - start) * 1000
+
+        response_text = message.content[0].text
+        coherence_score, flags = evaluate_coherence(response_text)
+
+        return FIOSResult(
+            provider="anthropic",
+            model=self.config.model,
+            prompt=full_prompt,
+            response=response_text,
+            input_tokens=message.usage.input_tokens,
+            output_tokens=message.usage.output_tokens,
+            latency_ms=latency_ms,
+            coherence_score=coherence_score,
+            flags=flags,
+        )
+
+
+class OpenAIAdapter(LLMProvider):
+    """FIOS adapter for OpenAI GPT API."""
+
+    async def query(self, prompt: str) -> FIOSResult:
+        """Send a prompt to GPT and return a FIOSResult.
+
+        Args:
+            prompt: The full enriched prompt to send.
+
+        Returns:
+            A FIOSResult with GPT's response and token usage.
+        """
+        import openai
+
+        client = openai.AsyncOpenAI(api_key=self.config.api_key)
+        context = build_yuyay_context()
+
+        start = time.monotonic()
+        completion = await client.chat.completions.create(
+            model=self.config.model,
+            max_tokens=self.config.max_tokens,
+            messages=[
+                {"role": "system", "content": context},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        latency_ms = (time.monotonic() - start) * 1000
+
+        response_text = completion.choices[0].message.content or ""
+        coherence_score, flags = evaluate_coherence(response_text)
+
+        return FIOSResult(
+            provider="openai",
+            model=self.config.model,
+            prompt=prompt,
+            response=response_text,
+            input_tokens=completion.usage.prompt_tokens if completion.usage else 0,
+            output_tokens=completion.usage.completion_tokens if completion.usage else 0,
+            latency_ms=latency_ms,
+            coherence_score=coherence_score,
+            flags=flags,
+        )
+
+
+class GoogleAdapter(LLMProvider):
+    """FIOS adapter for Google Gemini API."""
+
+    async def query(self, prompt: str) -> FIOSResult:
+        """Send a prompt to Gemini and return a FIOSResult.
+
+        Args:
+            prompt: The full enriched prompt to send.
+
+        Returns:
+            A FIOSResult with Gemini's response and token usage.
+        """
+        import google.generativeai as genai
+
+        genai.configure(api_key=self.config.api_key)
+        model = genai.GenerativeModel(self.config.model)
+        context = build_yuyay_context()
+        full_prompt = f"{context}\n\nUser Query: {prompt}"
+
+        start = time.monotonic()
+        response = await model.generate_content_async(full_prompt)
+        latency_ms = (time.monotonic() - start) * 1000
+
+        response_text = response.text
+        coherence_score, flags = evaluate_coherence(response_text)
+
+        return FIOSResult(
+            provider="google",
+            model=self.config.model,
+            prompt=full_prompt,
+            response=response_text,
+            input_tokens=0,
+            output_tokens=0,
+            latency_ms=latency_ms,
+            coherence_score=coherence_score,
+            flags=flags,
+        )
+
+
+class MockAdapter(LLMProvider):
+    """Mock FIOS adapter for testing without real API calls."""
+
+    async def query(self, prompt: str) -> FIOSResult:
+        """Return a mock response for testing.
+
+        Args:
+            prompt: The prompt — ignored in mock mode.
+
+        Returns:
+            A FIOSResult with fake data for testing.
+        """
+        context = build_yuyay_context()
+        mock_response = (
+            "This response demonstrates wisdom, compassion, and purpose. "
+            "It considers the balance and harmony of whole systems, "
+            "and aims to heal the planet for future generations."
+        )
+        coherence_score, flags = evaluate_coherence(mock_response)
+        return FIOSResult(
+            provider="mock",
+            model="mock-model",
+            prompt=f"{context}\n\nUser Query: {prompt}",
+            response=mock_response,
+            input_tokens=100,
+            output_tokens=50,
+            latency_ms=10.0,
+            coherence_score=coherence_score,
+            flags=flags,
+        )
+
+
+class FIOS:
+    """Foundational Intelligent OS — main orchestrator for LLM queries.
+
+    FIOS manages provider selection, prompt enrichment with YUYAY context,
+    response evaluation, and result aggregation.
+
+    Attributes:
+        config: The FIOSConfig defining provider and model settings.
+        provider: The concrete LLMProvider adapter instance.
+    """
+
+    PROVIDER_MAP: dict[str, type[LLMProvider]] = {
+        "anthropic": AnthropicAdapter,
+        "openai": OpenAIAdapter,
+        "google": GoogleAdapter,
+        "mock": MockAdapter,
+    }
+
+    def __init__(self, config: FIOSConfig) -> None:
+        """Initialize FIOS with a provider config.
+
+        Args:
+            config: The FIOSConfig specifying which provider and model to use.
+
+        Raises:
+            ValueError: If the provider name is not supported.
+        """
+        if config.provider not in self.PROVIDER_MAP:
+            raise ValueError(
+                f"Unsupported provider '{config.provider}'. "
+                f"Must be one of: {list(self.PROVIDER_MAP.keys())}"
+            )
+        self.config = config
+        self.provider = self.PROVIDER_MAP[config.provider](config)
+
+    async def query(self, prompt: str) -> FIOSResult:
+        """Send a prompt through FIOS and return an evaluated result.
+
+        Enriches the prompt with YUYAY context, sends it to the configured
+        provider, and evaluates the response for coherence.
+
+        Args:
+            prompt: The user query to send.
+
+        Returns:
+            A FIOSResult with the response and evaluation metadata.
+        """
+        return await self.provider.query(prompt)
