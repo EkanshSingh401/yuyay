@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from app.db import init_db
 from app.routers import (
@@ -17,7 +20,7 @@ from app.routers import (
     wheel,
 )
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="YUYAY Intelligence API",
@@ -27,6 +30,10 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,13 +49,13 @@ async def startup_event() -> None:
     await init_db()
 
 
+app.include_router(auth.router)
 app.include_router(archetypes.router)
 app.include_router(transformers.router)
 app.include_router(evaluate.router)
 app.include_router(wheel.router)
 app.include_router(sessions.router)
 app.include_router(metrics.router)
-app.include_router(auth.router)
 
 
 @app.get("/api/v1/health")
