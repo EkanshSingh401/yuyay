@@ -110,6 +110,59 @@ class TestFIOSResult:
         assert "missing_compassion" in result.flags
         assert len(result.flags) == 2
 
+    def test_estimated_cost_defaults_to_zero(self) -> None:
+        """estimated_cost_usd defaults to 0.0 when not provided."""
+        result = self._make_result()
+        assert result.estimated_cost_usd == 0.0
+
+    def test_estimated_cost_stored_correctly(self) -> None:
+        """estimated_cost_usd is stored and accessible after construction."""
+        result = self._make_result(estimated_cost_usd=0.000045)
+        assert result.estimated_cost_usd == 0.000045
+
+    def test_summary_contains_cost(self) -> None:
+        """summary() includes the estimated cost."""
+        result = self._make_result(estimated_cost_usd=0.000045)
+        assert "Cost" in result.summary()
+
+
+# ── FIOSResult ───────────────────────────────────────────────────────────────
+
+
+class TestEstimateCost:
+    def test_mock_provider_costs_zero(self) -> None:
+        """Mock provider always costs zero."""
+        from yuyay.fios import estimate_cost
+
+        assert estimate_cost("mock", 1000, 500) == 0.0
+
+    def test_anthropic_cost_calculation(self) -> None:
+        """Anthropic cost is calculated correctly per million tokens."""
+        from yuyay.fios import estimate_cost
+
+        cost = estimate_cost("anthropic", 1_000_000, 0)
+        assert cost == 3.0
+
+    def test_openai_cost_calculation(self) -> None:
+        """OpenAI cost is calculated correctly per million tokens."""
+        from yuyay.fios import estimate_cost
+
+        cost = estimate_cost("openai", 1_000_000, 0)
+        assert cost == 30.0
+
+    def test_unknown_provider_costs_zero(self) -> None:
+        """Unknown provider defaults to zero cost."""
+        from yuyay.fios import estimate_cost
+
+        assert estimate_cost("unknown", 1000, 500) == 0.0
+
+    def test_cost_rounds_to_six_decimal_places(self) -> None:
+        """Cost is rounded to 6 decimal places."""
+        from yuyay.fios import estimate_cost
+
+        cost = estimate_cost("anthropic", 100, 50)
+        assert len(str(cost).split(".")[-1]) <= 6
+
 
 # ── build_yuyay_context ──────────────────────────────────────────────────────
 

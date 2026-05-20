@@ -10,6 +10,8 @@ import abc
 import time
 from dataclasses import dataclass, field
 
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 from yuyay.archetypes import ALL_ARCHETYPES
 from yuyay.transformers import ALL_TRANSFORMERS
 
@@ -58,6 +60,7 @@ class FIOSResult:
     latency_ms: float
     coherence_score: int
     flags: list[str] = field(default_factory=list)
+    estimated_cost_usd: float = 0.0
 
     @property
     def total_tokens(self) -> int:
@@ -79,7 +82,33 @@ class FIOSResult:
             f"Tokens: {self.total_tokens} | "
             f"Latency: {self.latency_ms:.0f}ms | "
             f"Coherence: {self.coherence_score}/100"
+            f"Cost: ${self.estimated_cost_usd:.6f}"
         )
+
+
+COST_PER_MILLION_TOKENS: dict[str, dict[str, float]] = {
+    "anthropic": {"input": 3.0, "output": 15.0},
+    "openai": {"input": 30.0, "output": 60.0},
+    "google": {"input": 0.075, "output": 0.075},
+    "mock": {"input": 0.0, "output": 0.0},
+}
+
+
+def estimate_cost(provider: str, input_tokens: int, output_tokens: int) -> float:
+    """Estimate the cost of a query in USD.
+
+    Args:
+        provider: The LLM provider name.
+        input_tokens: Number of input tokens used.
+        output_tokens: Number of output tokens used.
+
+    Returns:
+        Estimated cost in USD rounded to 6 decimal places.
+    """
+    rates = COST_PER_MILLION_TOKENS.get(provider, {"input": 0.0, "output": 0.0})
+    input_cost = (input_tokens / 1_000_000) * rates["input"]
+    output_cost = (output_tokens / 1_000_000) * rates["output"]
+    return round(input_cost + output_cost, 6)
 
 
 def build_yuyay_context() -> str:
@@ -171,14 +200,19 @@ class LLMProvider(abc.ABC):
 class AnthropicAdapter(LLMProvider):
     """FIOS adapter for Anthropic Claude API."""
 
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
+    )
     async def query(self, prompt: str) -> FIOSResult:
         """Send a prompt to Claude and return a FIOSResult.
+
+        Retries up to 3 times with exponential backoff on failure.
 
         Args:
             prompt: The full enriched prompt to send.
 
         Returns:
-            A FIOSResult with Claude's response and token usage.
+            A FIOSResult with Claude's response, token usage, and cost.
         """
         import anthropic
 
@@ -196,6 +230,11 @@ class AnthropicAdapter(LLMProvider):
 
         response_text = message.content[0].text
         coherence_score, flags = evaluate_coherence(response_text)
+        cost = estimate_cost(
+            "anthropic",
+            message.usage.input_tokens,
+            message.usage.output_tokens,
+        )
 
         return FIOSResult(
             provider="anthropic",
@@ -207,20 +246,26 @@ class AnthropicAdapter(LLMProvider):
             latency_ms=latency_ms,
             coherence_score=coherence_score,
             flags=flags,
+            estimated_cost_usd=cost,
         )
 
 
 class OpenAIAdapter(LLMProvider):
     """FIOS adapter for OpenAI GPT API."""
 
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
+    )
     async def query(self, prompt: str) -> FIOSResult:
         """Send a prompt to GPT and return a FIOSResult.
+
+        Retries up to 3 times with exponential backoff on failure.
 
         Args:
             prompt: The full enriched prompt to send.
 
         Returns:
-            A FIOSResult with GPT's response and token usage.
+            A FIOSResult with GPT's response, token usage, and cost.
         """
         import openai
 
@@ -239,32 +284,41 @@ class OpenAIAdapter(LLMProvider):
         latency_ms = (time.monotonic() - start) * 1000
 
         response_text = completion.choices[0].message.content or ""
+        input_tokens = completion.usage.prompt_tokens if completion.usage else 0
+        output_tokens = completion.usage.completion_tokens if completion.usage else 0
         coherence_score, flags = evaluate_coherence(response_text)
+        cost = estimate_cost("openai", input_tokens, output_tokens)
 
         return FIOSResult(
             provider="openai",
             model=self.config.model,
             prompt=prompt,
             response=response_text,
-            input_tokens=completion.usage.prompt_tokens if completion.usage else 0,
-            output_tokens=completion.usage.completion_tokens if completion.usage else 0,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
             latency_ms=latency_ms,
             coherence_score=coherence_score,
             flags=flags,
+            estimated_cost_usd=cost,
         )
 
 
 class GoogleAdapter(LLMProvider):
     """FIOS adapter for Google Gemini API."""
 
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
+    )
     async def query(self, prompt: str) -> FIOSResult:
         """Send a prompt to Gemini and return a FIOSResult.
+
+        Retries up to 3 times with exponential backoff on failure.
 
         Args:
             prompt: The full enriched prompt to send.
 
         Returns:
-            A FIOSResult with Gemini's response and token usage.
+            A FIOSResult with Gemini's response and cost.
         """
         import google.generativeai as genai
 
@@ -279,6 +333,7 @@ class GoogleAdapter(LLMProvider):
 
         response_text = response.text
         coherence_score, flags = evaluate_coherence(response_text)
+        cost = estimate_cost("google", 0, 0)
 
         return FIOSResult(
             provider="google",
@@ -290,6 +345,7 @@ class GoogleAdapter(LLMProvider):
             latency_ms=latency_ms,
             coherence_score=coherence_score,
             flags=flags,
+            estimated_cost_usd=cost,
         )
 
 
@@ -322,6 +378,7 @@ class MockAdapter(LLMProvider):
             latency_ms=10.0,
             coherence_score=coherence_score,
             flags=flags,
+            estimated_cost_usd=0.0,
         )
 
 
