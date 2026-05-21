@@ -16,6 +16,7 @@ from app.routers import (
     auth,
     evaluate,
     metrics,
+    query,
     sessions,
     transformers,
     wheel,
@@ -60,6 +61,7 @@ app.include_router(evaluate.router)
 app.include_router(wheel.router)
 app.include_router(sessions.router)
 app.include_router(metrics.router)
+app.include_router(query.router)
 
 
 @app.get("/api/v1/health")

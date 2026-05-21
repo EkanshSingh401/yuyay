@@ -11,7 +11,6 @@ import time
 from dataclasses import dataclass, field
 
 from tenacity import retry, stop_after_attempt, wait_exponential
-
 from yuyay.archetypes import ALL_ARCHETYPES
 from yuyay.transformers import ALL_TRANSFORMERS
 
@@ -81,7 +80,7 @@ class FIOSResult:
             f"[{self.provider}/{self.model}] "
             f"Tokens: {self.total_tokens} | "
             f"Latency: {self.latency_ms:.0f}ms | "
-            f"Coherence: {self.coherence_score}/100"
+            f"Coherence: {self.coherence_score}/100 | "
             f"Cost: ${self.estimated_cost_usd:.6f}"
         )
 
