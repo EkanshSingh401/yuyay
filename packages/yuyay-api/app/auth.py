@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta
 from typing import Any
 
 import bcrypt
 from jose import JWTError, jwt
 
-SECRET_KEY = "yuyay-secret-key-change-in-production"
+SECRET_KEY = os.environ.get("SECRET_KEY", "yuyay-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
