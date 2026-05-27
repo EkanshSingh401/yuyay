@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.auth import FAKE_USERS_DB, create_access_token, decode_token, verify_password
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 class Token(BaseModel):
@@ -48,12 +52,15 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Token:
     """Authenticate a user and return a JWT access token.
 
     Args:
+        request: The incoming HTTP request, required by slowapi for rate limiting.
         form_data: The username and password from the request form.
 
     Returns:
@@ -61,6 +68,7 @@ async def login(
 
     Raises:
         HTTPException: 401 if credentials are invalid.
+        HTTPException: 429 if rate limit is exceeded.
     """
     user = FAKE_USERS_DB.get(form_data.username)
     if user is None or not verify_password(form_data.password, user["hashed_password"]):

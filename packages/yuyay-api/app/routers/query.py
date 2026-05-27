@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from yuyay.fios import FIOS, FIOSConfig
 
 from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1", tags=["query"])
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 class QueryRequest(BaseModel):
@@ -60,8 +64,10 @@ class QueryResponse(BaseModel):
 
 
 @router.post("/query", response_model=QueryResponse)
+@limiter.limit("10/minute")
 async def query(
-    request: QueryRequest,
+    request: Request,
+    request_body: QueryRequest,
     current_user: str = Depends(get_current_user),
 ) -> QueryResponse:
     """Send a prompt through FIOS and return an evaluated LLM response.
@@ -70,7 +76,8 @@ async def query(
     configured LLM provider, and evaluates the response for coherence.
 
     Args:
-        request: The request body with prompt, provider, model, and api_key.
+        request: The incoming HTTP request, required by slowapi for rate limiting.
+        request_body: The request body with prompt, provider, model, and api_key.
         current_user: The authenticated user from JWT token.
 
     Returns:
@@ -78,16 +85,17 @@ async def query(
 
     Raises:
         HTTPException: 400 if the provider is invalid.
+        HTTPException: 429 if rate limit is exceeded.
         HTTPException: 500 if the LLM query fails.
     """
     try:
         config = FIOSConfig(
-            provider=request.provider,
-            model=request.model,
-            api_key=request.api_key,
+            provider=request_body.provider,
+            model=request_body.model,
+            api_key=request_body.api_key,
         )
         fios = FIOS(config)
-        result = await fios.query(request.prompt)
+        result = await fios.query(request_body.prompt)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
