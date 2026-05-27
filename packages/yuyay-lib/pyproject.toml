@@ -7,6 +7,9 @@ name = "yuyay"
 version = "0.1.0"
 description = "YUYAY Intelligence Framework"
 requires-python = ">=3.11"
+dependencies = [
+    "tenacity>=9.0.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -36,6 +39,8 @@ dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.1.0",
     "isort>=6.0.1",
+    "tenacity>=9.0.0",
+    "pytest-asyncio>=1.4.0",
 ]
 
 [[tool.mypy.overrides]]
@@ -44,5 +49,6 @@ module = [
     "openai",
     "google.generativeai",
     "google",
+    "tenacity",
 ]
 ignore_missing_imports = true
