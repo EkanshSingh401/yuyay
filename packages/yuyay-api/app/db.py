@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.models import Base
 
-DATABASE_URL = "sqlite+aiosqlite:///./yuyay.db"
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "sqlite+aiosqlite:///./yuyay.db",
+)
 
 engine = create_async_engine(
     DATABASE_URL,

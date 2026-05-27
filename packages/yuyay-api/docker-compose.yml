@@ -1,0 +1,35 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: yuyay-api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://yuyay:yuyay@db:5432/yuyay
+      - SECRET_KEY=yuyay-secret-key-change-in-production
+      - DEBUG=false
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=yuyay
+      - POSTGRES_PASSWORD=yuyay
+      - POSTGRES_DB=yuyay
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yuyay"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
