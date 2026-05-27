@@ -14,6 +14,7 @@ from app.logger import configure_logging, get_logger
 from app.routers import (
     archetypes,
     auth,
+    compare,
     evaluate,
     metrics,
     query,
@@ -56,6 +57,7 @@ async def startup_event() -> None:
 
 app.include_router(auth.router)
 app.include_router(archetypes.router)
+app.include_router(compare.router)
 app.include_router(transformers.router)
 app.include_router(evaluate.router)
 app.include_router(wheel.router)
