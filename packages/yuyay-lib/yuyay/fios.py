@@ -7,6 +7,7 @@ any LLM provider query and evaluates the response against YUYAY coherence metric
 from __future__ import annotations
 
 import abc
+import asyncio
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -577,3 +578,44 @@ class FIOS:
             A FIOSResult with the response and evaluation metadata.
         """
         return await self.provider.query(prompt)
+
+    async def query_all_providers(
+        self,
+        prompt: str,
+        configs: list[FIOSConfig],
+    ) -> list[FIOSResult]:
+        """Query multiple LLM providers concurrently and return all results.
+
+        Sends the same prompt to all configured providers simultaneously
+        using asyncio.gather for concurrent execution. Results include
+        coherence scores for comparison across providers.
+
+        Args:
+            prompt: The user query to send to all providers.
+            configs: List of FIOSConfig objects for each provider to query.
+
+        Returns:
+            A list of FIOSResult objects, one per provider, in the same
+            order as the configs list. Failed providers return None results
+            are excluded from the output.
+        """
+
+        async def query_single(config: FIOSConfig) -> FIOSResult | None:
+            """Query a single provider and handle failures gracefully.
+
+            Args:
+                config: The FIOSConfig for this provider.
+
+            Returns:
+                A FIOSResult or None if the query failed.
+            """
+            try:
+                fios = FIOS(config)
+                return await fios.query(prompt)
+            except Exception:
+                return None
+
+        results = await asyncio.gather(
+            *[query_single(config) for config in configs],
+        )
+        return [r for r in results if r is not None]

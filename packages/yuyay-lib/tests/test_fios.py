@@ -704,3 +704,59 @@ class TestCircuitBreakerIntegration:
         fios.provider.circuit_breaker.record_failure()
         with pytest.raises(RuntimeError, match="Circuit breaker open"):
             await fios.query("test")
+
+
+# ── Query For All Providers ───────────────────────────────────────────────────
+class TestQueryAllProviders:
+    @pytest.mark.asyncio
+    async def test_query_all_providers_single_config(self) -> None:
+        """query_all_providers returns one result for one config."""
+        config = FIOSConfig(provider="mock", model="mock-model")
+        fios = FIOS(config)
+        results = await fios.query_all_providers("test", [config])
+        assert len(results) == 1
+
+    @pytest.mark.asyncio
+    async def test_query_all_providers_multiple_configs(self) -> None:
+        """query_all_providers returns results for all configs."""
+        config1 = FIOSConfig(provider="mock", model="mock-model")
+        config2 = FIOSConfig(provider="mock", model="mock-model")
+        fios = FIOS(config1)
+        results = await fios.query_all_providers("test", [config1, config2])
+        assert len(results) == 2
+
+    @pytest.mark.asyncio
+    async def test_query_all_providers_returns_fios_results(self) -> None:
+        """query_all_providers returns FIOSResult instances."""
+        config = FIOSConfig(provider="mock", model="mock-model")
+        fios = FIOS(config)
+        results = await fios.query_all_providers("test", [config])
+        assert all(isinstance(r, FIOSResult) for r in results)
+
+    @pytest.mark.asyncio
+    async def test_query_all_providers_filters_failures(self) -> None:
+        """query_all_providers excludes failed provider results."""
+        good_config = FIOSConfig(provider="mock", model="mock-model")
+        bad_config = FIOSConfig(provider="mock", model="mock-model")
+        fios = FIOS(good_config)
+        bad_fios_provider = FIOS(bad_config)
+        bad_fios_provider.provider.circuit_breaker.failure_threshold = 1
+        bad_fios_provider.provider.circuit_breaker.record_failure()
+        good_results = await fios.query_all_providers("test", [good_config])
+        assert len(good_results) == 1
+
+    @pytest.mark.asyncio
+    async def test_query_all_providers_empty_configs(self) -> None:
+        """query_all_providers returns empty list for empty configs."""
+        config = FIOSConfig(provider="mock", model="mock-model")
+        fios = FIOS(config)
+        results = await fios.query_all_providers("test", [])
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_query_all_providers_coherence_scores(self) -> None:
+        """query_all_providers returns results with coherence scores."""
+        config = FIOSConfig(provider="mock", model="mock-model")
+        fios = FIOS(config)
+        results = await fios.query_all_providers("test", [config])
+        assert all(0 <= r.coherence_score <= 100 for r in results)
