@@ -9,6 +9,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://yuyay:yuyay@db:5432/yuyay
       - SECRET_KEY=yuyay-secret-key-change-in-production
       - DEBUG=false
+      - PORT=8000
     depends_on:
       db:
         condition: service_healthy
