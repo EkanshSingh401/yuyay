@@ -9,8 +9,15 @@ from __future__ import annotations
 import abc
 import time
 from dataclasses import dataclass, field
+from enum import Enum
 
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import (
+    retry,
+    retry_if_not_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
 from yuyay.archetypes import ALL_ARCHETYPES
 from yuyay.transformers import ALL_TRANSFORMERS
 
@@ -110,6 +117,87 @@ def estimate_cost(provider: str, input_tokens: int, output_tokens: int) -> float
     return round(input_cost + output_cost, 6)
 
 
+class CircuitState(Enum):
+    """States for the circuit breaker pattern.
+
+    Attributes:
+        CLOSED: Circuit is closed — requests flow through normally.
+        OPEN: Circuit is open — requests are blocked immediately.
+        HALF_OPEN: Circuit is testing — one request allowed through.
+    """
+
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+
+class CircuitBreaker:
+    """Circuit breaker for LLM provider calls.
+
+    Tracks failures across requests and opens the circuit when too many
+    failures occur, preventing cascading failures and wasted resources.
+
+    Attributes:
+        failure_threshold: Number of failures before opening the circuit.
+        recovery_timeout: Seconds to wait before trying again after opening.
+        provider: The provider name this circuit breaker protects.
+    """
+
+    def __init__(
+        self,
+        provider: str,
+        failure_threshold: int = 5,
+        recovery_timeout: float = 60.0,
+    ) -> None:
+        """Initialize the circuit breaker.
+
+        Args:
+            provider: The provider name this circuit breaker protects.
+            failure_threshold: Failures before opening. Defaults to 5.
+            recovery_timeout: Seconds before half-open retry. Defaults to 60.
+        """
+        self.provider = provider
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self._state = CircuitState.CLOSED
+        self._failure_count = 0
+        self._last_failure_time: float = 0.0
+
+    @property
+    def state(self) -> CircuitState:
+        """Return the current circuit state, updating if recovery timeout passed.
+
+        Returns:
+            The current CircuitState.
+        """
+        if (
+            self._state == CircuitState.OPEN
+            and time.monotonic() - self._last_failure_time >= self.recovery_timeout
+        ):
+            self._state = CircuitState.HALF_OPEN
+        return self._state
+
+    def record_success(self) -> None:
+        """Record a successful call — reset failure count and close circuit."""
+        self._failure_count = 0
+        self._state = CircuitState.CLOSED
+
+    def record_failure(self) -> None:
+        """Record a failed call — increment count and open circuit if threshold hit."""
+        self._failure_count += 1
+        self._last_failure_time = time.monotonic()
+        if self._failure_count >= self.failure_threshold:
+            self._state = CircuitState.OPEN
+
+    def is_open(self) -> bool:
+        """Check if the circuit is open and requests should be blocked.
+
+        Returns:
+            True if the circuit is open, False otherwise.
+        """
+        return self.state == CircuitState.OPEN
+
+
 def build_yuyay_context() -> str:
     """Build the YUYAY framework context string for prompt injection.
 
@@ -182,6 +270,7 @@ class LLMProvider(abc.ABC):
             config: The FIOSConfig for this provider.
         """
         self.config = config
+        self.circuit_breaker = CircuitBreaker(provider=config.provider)
 
     @abc.abstractmethod
     async def query(self, prompt: str) -> FIOSResult:
@@ -200,7 +289,9 @@ class AnthropicAdapter(LLMProvider):
     """FIOS adapter for Anthropic Claude API."""
 
     @retry(
-        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_not_exception_type(RuntimeError),
     )
     async def query(self, prompt: str) -> FIOSResult:
         """Send a prompt to Claude and return a FIOSResult.
@@ -212,48 +303,64 @@ class AnthropicAdapter(LLMProvider):
 
         Returns:
             A FIOSResult with Claude's response, token usage, and cost.
+
+        Raises:
+            RuntimeError: If the circuit breaker is open.
         """
-        import anthropic
+        if self.circuit_breaker.is_open():
+            raise RuntimeError(
+                f"Circuit breaker open for {self.config.provider} — "
+                f"too many failures, try again later."
+            )
+        try:
+            import anthropic
 
-        client = anthropic.AsyncAnthropic(api_key=self.config.api_key)
-        context = build_yuyay_context()
-        full_prompt = f"{context}\n\nUser Query: {prompt}"
+            client = anthropic.AsyncAnthropic(api_key=self.config.api_key)
+            context = build_yuyay_context()
+            full_prompt = f"{context}\n\nUser Query: {prompt}"
 
-        start = time.monotonic()
-        message = await client.messages.create(
-            model=self.config.model,
-            max_tokens=self.config.max_tokens,
-            messages=[{"role": "user", "content": full_prompt}],
-        )
-        latency_ms = (time.monotonic() - start) * 1000
+            start = time.monotonic()
+            message = await client.messages.create(
+                model=self.config.model,
+                max_tokens=self.config.max_tokens,
+                messages=[{"role": "user", "content": full_prompt}],
+            )
+            latency_ms = (time.monotonic() - start) * 1000
 
-        response_text = message.content[0].text
-        coherence_score, flags = evaluate_coherence(response_text)
-        cost = estimate_cost(
-            "anthropic",
-            message.usage.input_tokens,
-            message.usage.output_tokens,
-        )
-
-        return FIOSResult(
-            provider="anthropic",
-            model=self.config.model,
-            prompt=full_prompt,
-            response=response_text,
-            input_tokens=message.usage.input_tokens,
-            output_tokens=message.usage.output_tokens,
-            latency_ms=latency_ms,
-            coherence_score=coherence_score,
-            flags=flags,
-            estimated_cost_usd=cost,
-        )
+            response_text = message.content[0].text
+            coherence_score, flags = evaluate_coherence(response_text)
+            cost = estimate_cost(
+                "anthropic",
+                message.usage.input_tokens,
+                message.usage.output_tokens,
+            )
+            self.circuit_breaker.record_success()
+            return FIOSResult(
+                provider="anthropic",
+                model=self.config.model,
+                prompt=full_prompt,
+                response=response_text,
+                input_tokens=message.usage.input_tokens,
+                output_tokens=message.usage.output_tokens,
+                latency_ms=latency_ms,
+                coherence_score=coherence_score,
+                flags=flags,
+                estimated_cost_usd=cost,
+            )
+        except RuntimeError:
+            raise
+        except Exception as e:
+            self.circuit_breaker.record_failure()
+            raise e
 
 
 class OpenAIAdapter(LLMProvider):
     """FIOS adapter for OpenAI GPT API."""
 
     @retry(
-        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_not_exception_type(RuntimeError),
     )
     async def query(self, prompt: str) -> FIOSResult:
         """Send a prompt to GPT and return a FIOSResult.
@@ -265,48 +372,66 @@ class OpenAIAdapter(LLMProvider):
 
         Returns:
             A FIOSResult with GPT's response, token usage, and cost.
+
+        Raises:
+            RuntimeError: If the circuit breaker is open.
         """
-        import openai
+        if self.circuit_breaker.is_open():
+            raise RuntimeError(
+                f"Circuit breaker open for {self.config.provider} — "
+                f"too many failures, try again later."
+            )
+        try:
+            import openai
 
-        client = openai.AsyncOpenAI(api_key=self.config.api_key)
-        context = build_yuyay_context()
+            client = openai.AsyncOpenAI(api_key=self.config.api_key)
+            context = build_yuyay_context()
 
-        start = time.monotonic()
-        completion = await client.chat.completions.create(
-            model=self.config.model,
-            max_tokens=self.config.max_tokens,
-            messages=[
-                {"role": "system", "content": context},
-                {"role": "user", "content": prompt},
-            ],
-        )
-        latency_ms = (time.monotonic() - start) * 1000
+            start = time.monotonic()
+            completion = await client.chat.completions.create(
+                model=self.config.model,
+                max_tokens=self.config.max_tokens,
+                messages=[
+                    {"role": "system", "content": context},
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            latency_ms = (time.monotonic() - start) * 1000
 
-        response_text = completion.choices[0].message.content or ""
-        input_tokens = completion.usage.prompt_tokens if completion.usage else 0
-        output_tokens = completion.usage.completion_tokens if completion.usage else 0
-        coherence_score, flags = evaluate_coherence(response_text)
-        cost = estimate_cost("openai", input_tokens, output_tokens)
-
-        return FIOSResult(
-            provider="openai",
-            model=self.config.model,
-            prompt=prompt,
-            response=response_text,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            latency_ms=latency_ms,
-            coherence_score=coherence_score,
-            flags=flags,
-            estimated_cost_usd=cost,
-        )
+            response_text = completion.choices[0].message.content or ""
+            input_tokens = completion.usage.prompt_tokens if completion.usage else 0
+            output_tokens = (
+                completion.usage.completion_tokens if completion.usage else 0
+            )
+            coherence_score, flags = evaluate_coherence(response_text)
+            cost = estimate_cost("openai", input_tokens, output_tokens)
+            self.circuit_breaker.record_success()
+            return FIOSResult(
+                provider="openai",
+                model=self.config.model,
+                prompt=prompt,
+                response=response_text,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                latency_ms=latency_ms,
+                coherence_score=coherence_score,
+                flags=flags,
+                estimated_cost_usd=cost,
+            )
+        except RuntimeError:
+            raise
+        except Exception as e:
+            self.circuit_breaker.record_failure()
+            raise e
 
 
 class GoogleAdapter(LLMProvider):
     """FIOS adapter for Google Gemini API."""
 
     @retry(
-        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10)
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_not_exception_type(RuntimeError),
     )
     async def query(self, prompt: str) -> FIOSResult:
         """Send a prompt to Gemini and return a FIOSResult.
@@ -318,34 +443,48 @@ class GoogleAdapter(LLMProvider):
 
         Returns:
             A FIOSResult with Gemini's response and cost.
+
+        Raises:
+            RuntimeError: If the circuit breaker is open.
         """
-        import google.generativeai as genai
+        if self.circuit_breaker.is_open():
+            raise RuntimeError(
+                f"Circuit breaker open for {self.config.provider} — "
+                f"too many failures, try again later."
+            )
+        try:
+            import google.generativeai as genai
 
-        genai.configure(api_key=self.config.api_key)
-        model = genai.GenerativeModel(self.config.model)
-        context = build_yuyay_context()
-        full_prompt = f"{context}\n\nUser Query: {prompt}"
+            genai.configure(api_key=self.config.api_key)
+            model = genai.GenerativeModel(self.config.model)
+            context = build_yuyay_context()
+            full_prompt = f"{context}\n\nUser Query: {prompt}"
 
-        start = time.monotonic()
-        response = await model.generate_content_async(full_prompt)
-        latency_ms = (time.monotonic() - start) * 1000
+            start = time.monotonic()
+            response = await model.generate_content_async(full_prompt)
+            latency_ms = (time.monotonic() - start) * 1000
 
-        response_text = response.text
-        coherence_score, flags = evaluate_coherence(response_text)
-        cost = estimate_cost("google", 0, 0)
-
-        return FIOSResult(
-            provider="google",
-            model=self.config.model,
-            prompt=full_prompt,
-            response=response_text,
-            input_tokens=0,
-            output_tokens=0,
-            latency_ms=latency_ms,
-            coherence_score=coherence_score,
-            flags=flags,
-            estimated_cost_usd=cost,
-        )
+            response_text = response.text
+            coherence_score, flags = evaluate_coherence(response_text)
+            cost = estimate_cost("google", 0, 0)
+            self.circuit_breaker.record_success()
+            return FIOSResult(
+                provider="google",
+                model=self.config.model,
+                prompt=full_prompt,
+                response=response_text,
+                input_tokens=0,
+                output_tokens=0,
+                latency_ms=latency_ms,
+                coherence_score=coherence_score,
+                flags=flags,
+                estimated_cost_usd=cost,
+            )
+        except RuntimeError:
+            raise
+        except Exception as e:
+            self.circuit_breaker.record_failure()
+            raise e
 
 
 class MockAdapter(LLMProvider):
@@ -359,7 +498,15 @@ class MockAdapter(LLMProvider):
 
         Returns:
             A FIOSResult with fake data for testing.
+
+        Raises:
+            RuntimeError: If the circuit breaker is open.
         """
+        if self.circuit_breaker.is_open():
+            raise RuntimeError(
+                f"Circuit breaker open for {self.config.provider} — "
+                f"too many failures, try again later."
+            )
         context = build_yuyay_context()
         mock_response = (
             "This response demonstrates wisdom, compassion, and purpose. "
@@ -367,6 +514,7 @@ class MockAdapter(LLMProvider):
             "and aims to heal the planet for future generations."
         )
         coherence_score, flags = evaluate_coherence(mock_response)
+        self.circuit_breaker.record_success()
         return FIOSResult(
             provider="mock",
             model="mock-model",

@@ -466,6 +466,68 @@ class TestAnthropicAdapter:
 
 class TestOpenAIAdapter:
     @pytest.mark.asyncio
+    async def test_openai_adapter_records_success_on_success(self) -> None:
+        """OpenAIAdapter records success after successful query."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from yuyay.fios import CircuitState
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "wisdom compassion purpose balance heal planet"
+        mock_usage = MagicMock()
+        mock_usage.prompt_tokens = 100
+        mock_usage.completion_tokens = 50
+        mock_completion = MagicMock()
+        mock_completion.choices = [mock_choice]
+        mock_completion.usage = mock_usage
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
+        mock_openai = MagicMock()
+        mock_openai.AsyncOpenAI.return_value = mock_client
+
+        with patch.dict("sys.modules", {"openai": mock_openai}):
+            from yuyay.fios import OpenAIAdapter
+
+            config = FIOSConfig(provider="openai", model="gpt-4", api_key="sk-fake")
+            adapter = OpenAIAdapter(config)
+            await adapter.query("test")
+            assert adapter.circuit_breaker.state == CircuitState.CLOSED
+            assert adapter.circuit_breaker._failure_count == 0
+
+    @pytest.mark.asyncio
+    async def test_openai_adapter_records_failure_on_error(self) -> None:
+        """OpenAIAdapter records failure when API raises exception."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(
+            side_effect=Exception("API error")
+        )
+        mock_openai = MagicMock()
+        mock_openai.AsyncOpenAI.return_value = mock_client
+
+        with patch.dict("sys.modules", {"openai": mock_openai}):
+            from yuyay.fios import OpenAIAdapter
+
+            config = FIOSConfig(provider="openai", model="gpt-4", api_key="sk-fake")
+            adapter = OpenAIAdapter(config)
+            with pytest.raises(Exception):
+                await adapter.query("test")
+            assert adapter.circuit_breaker._failure_count > 0
+
+    @pytest.mark.asyncio
+    async def test_openai_adapter_circuit_breaker_open_raises(self) -> None:
+        """OpenAIAdapter raises RuntimeError when circuit breaker is open."""
+        from yuyay.fios import OpenAIAdapter
+
+        config = FIOSConfig(provider="openai", model="gpt-4", api_key="sk-fake")
+        adapter = OpenAIAdapter(config)
+        adapter.circuit_breaker.failure_threshold = 1
+        adapter.circuit_breaker.record_failure()
+        with pytest.raises(RuntimeError, match="Circuit breaker open"):
+            await adapter.query("test")
+
+    @pytest.mark.asyncio
     async def test_query_returns_fios_result(self) -> None:
         """OpenAIAdapter.query() returns a FIOSResult using a mocked client."""
         from unittest.mock import AsyncMock, MagicMock, patch
@@ -529,3 +591,116 @@ class TestOpenAIAdapter:
 
 
 # pragma: no cover for class TestGoogleAdapter
+
+
+# ── Circuit Breaker ───────────────────────────────────────────────────
+class TestCircuitBreaker:
+    def test_initial_state_is_closed(self) -> None:
+        """Circuit breaker starts in CLOSED state."""
+        from yuyay.fios import CircuitBreaker, CircuitState
+
+        cb = CircuitBreaker(provider="test")
+        assert cb.state == CircuitState.CLOSED
+
+    def test_is_open_returns_false_when_closed(self) -> None:
+        """is_open() returns False when circuit is closed."""
+        from yuyay.fios import CircuitBreaker
+
+        cb = CircuitBreaker(provider="test")
+        assert cb.is_open() is False
+
+    def test_record_failure_increments_count(self) -> None:
+        """record_failure() increments the failure count."""
+        from yuyay.fios import CircuitBreaker
+
+        cb = CircuitBreaker(provider="test", failure_threshold=5)
+        cb.record_failure()
+        assert cb._failure_count == 1
+
+    def test_circuit_opens_after_threshold(self) -> None:
+        """Circuit opens after hitting the failure threshold."""
+        from yuyay.fios import CircuitBreaker, CircuitState
+
+        cb = CircuitBreaker(provider="test", failure_threshold=3)
+        cb.record_failure()
+        cb.record_failure()
+        cb.record_failure()
+        assert cb.state == CircuitState.OPEN
+
+    def test_is_open_returns_true_when_open(self) -> None:
+        """is_open() returns True when circuit is open."""
+        from yuyay.fios import CircuitBreaker
+
+        cb = CircuitBreaker(provider="test", failure_threshold=1)
+        cb.record_failure()
+        assert cb.is_open() is True
+
+    def test_record_success_resets_failure_count(self) -> None:
+        """record_success() resets failure count to zero."""
+        from yuyay.fios import CircuitBreaker
+
+        cb = CircuitBreaker(provider="test", failure_threshold=5)
+        cb.record_failure()
+        cb.record_failure()
+        cb.record_success()
+        assert cb._failure_count == 0
+
+    def test_record_success_closes_circuit(self) -> None:
+        """record_success() closes the circuit."""
+        from yuyay.fios import CircuitBreaker, CircuitState
+
+        cb = CircuitBreaker(provider="test", failure_threshold=1)
+        cb.record_failure()
+        cb.record_success()
+        assert cb.state == CircuitState.CLOSED
+
+    def test_circuit_transitions_to_half_open_after_timeout(self) -> None:
+        """Circuit transitions to HALF_OPEN after recovery timeout."""
+        from yuyay.fios import CircuitBreaker, CircuitState
+
+        cb = CircuitBreaker(provider="test", failure_threshold=1, recovery_timeout=0.01)
+        cb.record_failure()
+        import time
+
+        time.sleep(0.02)
+        assert cb.state == CircuitState.HALF_OPEN
+
+    def test_provider_stored_on_circuit_breaker(self) -> None:
+        """Provider name is stored on the circuit breaker."""
+        from yuyay.fios import CircuitBreaker
+
+        cb = CircuitBreaker(provider="anthropic")
+        assert cb.provider == "anthropic"
+
+
+class TestCircuitBreakerIntegration:
+    @pytest.mark.asyncio
+    async def test_mock_adapter_circuit_breaker_open_raises(self) -> None:
+        """MockAdapter raises RuntimeError when circuit breaker is open."""
+        config = FIOSConfig(provider="mock", model="mock-model")
+        adapter = MockAdapter(config)
+        adapter.circuit_breaker.failure_threshold = 1
+        adapter.circuit_breaker.record_failure()
+        with pytest.raises(RuntimeError, match="Circuit breaker open"):
+            await adapter.query("test")
+
+    @pytest.mark.asyncio
+    async def test_mock_adapter_records_success(self) -> None:
+        """MockAdapter records success after successful query."""
+        from yuyay.fios import CircuitState
+
+        config = FIOSConfig(provider="mock", model="mock-model")
+        adapter = MockAdapter(config)
+        await adapter.query("test")
+        assert adapter.circuit_breaker.state == CircuitState.CLOSED
+        assert adapter.circuit_breaker._failure_count == 0
+
+    @pytest.mark.asyncio
+    async def test_fios_circuit_breaker_open_raises_runtime_error(self) -> None:
+        """FIOS raises RuntimeError when circuit is open."""
+        config = FIOSConfig(provider="mock", model="mock-model")
+        fios = FIOS(config)
+        fios.provider.circuit_breaker.failure_threshold = 1
+        fios.provider.circuit_breaker.record_failure()
+        with pytest.raises(RuntimeError, match="Circuit breaker open"):
+            await fios.query("test")
