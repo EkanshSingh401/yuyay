@@ -74,11 +74,8 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-inline: 3rem;
-  background: rgba(8, 12, 24, 0.96);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  padding: 0 3rem;
+  width: 100%;
 }
 
 .nav::before {
@@ -332,4 +329,9 @@ a { color: inherit; text-decoration: none; }
   height: calc(100vh - 4.5rem);
   border: none;
   display: block;
+}
+
+/* ─── Section fix ──────────────────────────────────────────────── */
+section {
+  width: 100%;
 }
