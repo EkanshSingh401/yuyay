@@ -2,324 +2,393 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main>
-      {/* Navigation */}
-      <nav
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          padding: "1.25rem 3rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid var(--border)",
-          background: "rgba(10, 14, 26, 0.95)",
-          backdropFilter: "blur(10px)",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "1.1rem",
-            letterSpacing: "0.15em",
-            color: "var(--accent-gold)",
-            fontFamily: "Georgia, serif",
-          }}
-        >
-          YUYAY
-        </span>
-        <div style={{ display: "flex", gap: "2.5rem" }}>
-          {[
-            { href: "/archetypes", label: "Archetypes" },
-            { href: "/evaluate", label: "Evaluate" },
-            { href: "/about", label: "About" },
-            { href: "/library", label: "Library" },
-            { href: "/api-docs", label: "API" },
-          ].map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              style={{
-                fontSize: "0.85rem",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "var(--text-muted)",
-                transition: "color 0.2s",
-              }}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
+    <main className="pt-nav">
 
-      {/* Hero Section */}
+      {/* ── Hero ────────────────────────────────────────────────── */}
       <section
         style={{
-          minHeight: "100vh",
+          minHeight: "calc(100vh - 4.5rem)",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           textAlign: "center",
-          padding: "8rem 2rem 4rem",
+          padding: "6rem 2rem 4rem",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Background gradient */}
+        {/* Radial glow */}
         <div
+          aria-hidden
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(ellipse at 50% 40%, rgba(201,168,76,0.08) 0%, transparent 70%)",
+              "radial-gradient(ellipse 60% 55% at 50% 42%, rgba(201,168,76,0.06) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />
 
-        <p
-          style={{
-            fontSize: "0.75rem",
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            color: "var(--accent-gold)",
-            marginBottom: "2rem",
-          }}
-        >
-          UN Office of the Future
-        </p>
+        <span className="eyebrow" style={{ marginBottom: "2.5rem" }}>
+          UN Office of the Future · Framework Documentation
+        </span>
 
         <h1
           style={{
-            fontSize: "clamp(3rem, 8vw, 7rem)",
+            fontFamily: "var(--font-playfair)",
+            fontSize: "clamp(5rem, 14vw, 12rem)",
             fontWeight: 400,
-            letterSpacing: "0.05em",
-            lineHeight: 1.05,
-            marginBottom: "1.5rem",
-            color: "var(--foreground)",
+            letterSpacing: "0.06em",
+            lineHeight: 0.95,
+            color: "var(--fg)",
+            marginBottom: "0.35em",
           }}
         >
           YUYAY
-          <br />
-          <span style={{ color: "var(--accent-gold)" }}>Intelligence</span>
         </h1>
 
         <p
           style={{
-            fontSize: "clamp(1rem, 2vw, 1.25rem)",
-            color: "var(--text-muted)",
-            maxWidth: "600px",
-            marginBottom: "1rem",
-            lineHeight: 1.8,
+            fontFamily: "var(--font-playfair)",
+            fontSize: "clamp(1.4rem, 4vw, 2.8rem)",
+            fontWeight: 400,
+            fontStyle: "italic",
+            color: "var(--gold)",
+            letterSpacing: "0.04em",
+            marginBottom: "2.5rem",
           }}
         >
-          A multi-dimensional framework for evaluating alignment across
-          12 archetype dimensions — integrating wisdom, compassion, and
-          planetary consciousness into every decision.
+          Intelligence
+        </p>
+
+        <div className="hero-rule" />
+
+        <p
+          style={{
+            fontSize: "clamp(1rem, 2vw, 1.2rem)",
+            color: "var(--secondary)",
+            maxWidth: "580px",
+            lineHeight: 1.85,
+            marginBottom: "0.75rem",
+          }}
+        >
+          A multi-dimensional framework evaluating alignment across{" "}
+          twelve archetype dimensions — integrating wisdom, compassion,
+          and planetary consciousness into every decision.
         </p>
 
         <p
           style={{
-            fontSize: "0.85rem",
-            color: "var(--text-muted)",
+            fontSize: "0.8rem",
+            color: "var(--muted)",
+            letterSpacing: "0.08em",
             marginBottom: "3rem",
-            letterSpacing: "0.05em",
           }}
         >
-          Developed by Mitchell Gold · Integrating SDGs 17, ISO 26000, UNDRIP
+          Developed by Mitchell Gold · Integrating SDGs 17, ISO 26000,
+          UNDRIP
         </p>
 
-        <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", justifyContent: "center" }}>
-          <Link
-            href="/evaluate"
-            style={{
-              padding: "1rem 2.5rem",
-              background: "var(--accent-gold)",
-              color: "var(--background)",
-              fontSize: "0.85rem",
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-              borderRadius: "2px",
-              transition: "background 0.2s",
-            }}
-          >
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
+          <Link href="/evaluate" className="btn btn-primary">
             Begin Evaluation
           </Link>
-          <Link
-            href="/archetypes"
-            style={{
-              padding: "1rem 2.5rem",
-              border: "1px solid var(--border)",
-              color: "var(--foreground)",
-              fontSize: "0.85rem",
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              borderRadius: "2px",
-              transition: "border-color 0.2s",
-            }}
-          >
+          <Link href="/archetypes" className="btn btn-ghost">
             Explore Archetypes
           </Link>
         </div>
       </section>
 
-      {/* What is YUYAY section */}
-      <section
+      {/* ── Stats bar ───────────────────────────────────────────── */}
+      <div
         style={{
-          padding: "6rem 2rem",
-          maxWidth: "900px",
-          margin: "0 auto",
           borderTop: "1px solid var(--border)",
-        }}
-      >
-        <p
-          style={{
-            fontSize: "0.75rem",
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            color: "var(--accent-gold)",
-            marginBottom: "1.5rem",
-          }}
-        >
-          The Framework
-        </p>
-        <h2
-          style={{
-            fontSize: "clamp(1.8rem, 4vw, 3rem)",
-            marginBottom: "2rem",
-            color: "var(--foreground)",
-          }}
-        >
-          Intelligence that serves humanity
-        </h2>
-        <p
-          style={{
-            fontSize: "1.1rem",
-            color: "var(--text-muted)",
-            lineHeight: 2,
-            marginBottom: "1.5rem",
-          }}
-        >
-          YUYAY is a self-assessment framework that evaluates alignment
-          across 12 dimensions of human potential — from Vision and Structure
-          to Compassion and Planetary Stewardship. Rooted in the wisdom of
-          Edward de Bono&apos;s PO lateral thinking, it provides a structured
-          path to decisions that serve the highest purpose.
-        </p>
-        <p
-          style={{
-            fontSize: "1.1rem",
-            color: "var(--text-muted)",
-            lineHeight: 2,
-          }}
-        >
-          Through 10 transformer questions — each answerable as YES, NO, or
-          PO — individuals and organizations can evaluate whether their
-          decisions demonstrate wisdom, compassion, and long-term thinking
-          across the Co-Creation Wheel&apos;s 12 sectors.
-        </p>
-      </section>
-
-      {/* Three pillars */}
-      <section
-        style={{
-          padding: "4rem 2rem 8rem",
-          maxWidth: "1100px",
-          margin: "0 auto",
+          borderBottom: "1px solid var(--border)",
         }}
       >
         <div
+          className="container"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "1px",
-            border: "1px solid var(--border)",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 0,
           }}
         >
           {[
-            {
-              number: "12",
-              label: "Archetype Dimensions",
-              description:
-                "From the Seer to the Weaver — each archetype represents a unique gift and shadow in human potential.",
-            },
-            {
-              number: "10",
-              label: "Transformer Questions",
-              description:
-                "Self-reflection questions that evaluate wisdom, compassion, purpose, and planetary consciousness.",
-            },
-            {
-              number: "3",
-              label: "LLM Providers",
-              description:
-                "OpenAI, Anthropic, and Google — queried concurrently through the FIOS orchestration layer.",
-            },
-          ].map((pillar) => (
+            { n: "12", label: "Archetype Dimensions" },
+            { n: "10", label: "Transformer Questions" },
+            { n: "3", label: "LLM Providers" },
+          ].map((s, i) => (
             <div
-              key={pillar.number}
+              key={s.n}
               style={{
-                padding: "3rem 2.5rem",
-                background: "var(--surface)",
-                borderRight: "1px solid var(--border)",
+                padding: "2.5rem 2rem",
+                textAlign: "center",
+                borderRight:
+                  i < 2 ? "1px solid var(--border)" : undefined,
               }}
             >
-              <p
+              <div className="stat-number">{s.n}</div>
+              <div
                 style={{
-                  fontSize: "3.5rem",
-                  color: "var(--accent-gold)",
-                  fontFamily: "Georgia, serif",
-                  lineHeight: 1,
-                  marginBottom: "0.5rem",
-                }}
-              >
-                {pillar.number}
-              </p>
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  letterSpacing: "0.2em",
+                  fontSize: "0.72rem",
+                  letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "var(--foreground)",
-                  marginBottom: "1rem",
+                  color: "var(--muted)",
+                  marginTop: "0.4rem",
                 }}
               >
-                {pillar.label}
-              </p>
-              <p
-                style={{
-                  fontSize: "0.9rem",
-                  color: "var(--text-muted)",
-                  lineHeight: 1.8,
-                }}
-              >
-                {pillar.description}
-              </p>
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── The Framework ────────────────────────────────────────── */}
+      <section style={{ padding: "7rem 0" }}>
+        <div
+          className="container"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1.6fr",
+            gap: "5rem",
+            alignItems: "start",
+          }}
+        >
+          <div>
+            <span className="eyebrow" style={{ marginBottom: "1.5rem" }}>
+              The Framework
+            </span>
+            <h2
+              style={{
+                fontSize: "clamp(1.8rem, 3.5vw, 2.6rem)",
+                color: "var(--fg)",
+              }}
+            >
+              Intelligence that serves humanity
+            </h2>
+          </div>
+          <div>
+            <p
+              style={{
+                fontSize: "1.1rem",
+                color: "var(--secondary)",
+                lineHeight: 1.9,
+                marginBottom: "1.5rem",
+              }}
+            >
+              YUYAY — from the Quechua word for knowledge — is a
+              self-assessment framework built on twelve dimensions of
+              human potential. From Vision and Structure to Compassion
+              and Planetary Stewardship, every decision can be weighed
+              against the full spectrum of what it means to act wisely
+              in the world.
+            </p>
+            <p
+              style={{
+                fontSize: "1.1rem",
+                color: "var(--secondary)",
+                lineHeight: 1.9,
+              }}
+            >
+              Through ten transformer questions — each answerable as
+              YES, NO, or PO — individuals and organisations evaluate
+              whether their decisions demonstrate the coherence,
+              long-term thinking, and relational intelligence that the
+              Co-Creation Wheel demands.
+            </p>
+          </div>
+        </div>
       </section>
 
-      {/* Footer */}
-      <footer
+      {/* ── PO Lateral Thinking ──────────────────────────────────── */}
+      <section
         style={{
           borderTop: "1px solid var(--border)",
-          padding: "2rem 3rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          color: "var(--text-muted)",
-          fontSize: "0.8rem",
-          letterSpacing: "0.05em",
+          padding: "6rem 0",
+          background: "var(--surface)",
         }}
       >
-        <span>YUYAY Intelligence Framework © 2026</span>
-        <span>UN Office of the Future · Mitchell Gold</span>
-      </footer>
+        <div className="container-narrow" style={{ textAlign: "center" }}>
+          <span className="eyebrow" style={{ marginBottom: "1.5rem" }}>
+            The Third Way
+          </span>
+          <h2
+            style={{
+              fontSize: "clamp(2rem, 4vw, 3rem)",
+              marginBottom: "1.5rem",
+            }}
+          >
+            Beyond Yes and No
+          </h2>
+          <p
+            style={{
+              fontSize: "1.15rem",
+              color: "var(--secondary)",
+              lineHeight: 1.95,
+              maxWidth: "640px",
+              marginInline: "auto",
+              marginBottom: "1rem",
+            }}
+          >
+            PO is a term coined by Edward de Bono to represent lateral
+            thinking — a deliberate provocation that moves beyond binary
+            logic. Where YES confirms and NO rejects, PO suspends
+            judgement and opens a space for possibility.
+          </p>
+          <p
+            style={{
+              fontSize: "1.1rem",
+              color: "var(--muted)",
+              lineHeight: 1.85,
+              maxWidth: "580px",
+              marginInline: "auto",
+            }}
+          >
+            In the YUYAY framework, PO marks the dimensions where deeper
+            inquiry is warranted — where an answer exists not yet in
+            full alignment, but in movement toward it.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Three Pillars ────────────────────────────────────────── */}
+      <section
+        style={{
+          borderTop: "1px solid var(--border)",
+          padding: "6rem 0",
+        }}
+      >
+        <div className="container" style={{ marginBottom: "3.5rem" }}>
+          <span className="eyebrow" style={{ marginBottom: "1.2rem" }}>
+            The Architecture
+          </span>
+          <h2 style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.6rem)" }}>
+            How it works
+          </h2>
+        </div>
+
+        <div
+          style={{
+            borderTop: "1px solid var(--border)",
+            borderBottom: "1px solid var(--border)",
+          }}
+        >
+          <div
+            className="container"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: 0,
+            }}
+          >
+            {[
+              {
+                n: "01",
+                title: "Select an Archetype",
+                body: "Each of the twelve dimensions — from the Seer and the Weaver to the Warrior and the Steward — represents a unique pattern of gifts and shadows in human potential.",
+              },
+              {
+                n: "02",
+                title: "Answer Ten Questions",
+                body: "The transformer questions probe whether a decision embodies wisdom, compassion, purpose, systemic thinking, and planetary consciousness. Each answer is YES, NO, or PO.",
+              },
+              {
+                n: "03",
+                title: "Receive Your Report",
+                body: "FIOS — the Framework Intelligence Orchestration System — evaluates responses across OpenAI, Anthropic, and Google concurrently, scoring coherence against the YUYAY framework.",
+              },
+            ].map((p, i) => (
+              <div
+                key={p.n}
+                style={{
+                  padding: "3rem 2.5rem",
+                  borderRight:
+                    i < 2 ? "1px solid var(--border)" : undefined,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--font-garamond)",
+                    fontSize: "0.68rem",
+                    letterSpacing: "0.2em",
+                    color: "var(--gold)",
+                    marginBottom: "1.2rem",
+                    opacity: 0.8,
+                  }}
+                >
+                  {p.n}
+                </div>
+                <h3
+                  style={{
+                    fontSize: "1.25rem",
+                    fontFamily: "var(--font-playfair)",
+                    marginBottom: "1rem",
+                    color: "var(--fg)",
+                  }}
+                >
+                  {p.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: "0.97rem",
+                    color: "var(--muted)",
+                    lineHeight: 1.85,
+                  }}
+                >
+                  {p.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ─────────────────────────────────────────────────── */}
+      <section
+        style={{
+          padding: "7rem 2rem",
+          textAlign: "center",
+          borderTop: "1px solid var(--border)",
+        }}
+      >
+        <span className="eyebrow" style={{ marginBottom: "1.5rem" }}>
+          Framework Assessment
+        </span>
+        <h2
+          style={{
+            fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)",
+            marginBottom: "1.2rem",
+          }}
+        >
+          Begin your evaluation
+        </h2>
+        <p
+          style={{
+            color: "var(--muted)",
+            maxWidth: "480px",
+            marginInline: "auto",
+            marginBottom: "2.5rem",
+            lineHeight: 1.8,
+          }}
+        >
+          Apply the YUYAY framework to any decision, initiative, or
+          strategic question. The assessment takes approximately ten
+          minutes.
+        </p>
+        <Link href="/evaluate" className="btn btn-primary">
+          Start Assessment
+        </Link>
+      </section>
     </main>
   );
 }
