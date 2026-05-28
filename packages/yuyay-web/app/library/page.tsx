@@ -10,7 +10,7 @@ const resources: Resource[] = [
       {
         label: "yuyay on TestPyPI",
         href: "https://test.pypi.org/project/yuyay/",
-        note: "Python library — FIOS orchestration, archetypes, transformer questions, and evaluation engine.",
+        note: "Python library, FIOS orchestration, archetypes, transformer questions, and evaluation engine.",
       },
       {
         label: "GitHub Repository",
@@ -23,12 +23,12 @@ const resources: Resource[] = [
     category: "API & Documentation",
     items: [
       {
-        label: "REST API — Swagger UI",
+        label: "REST API, Swagger UI",
         href: "https://yuyay-production-2e45.up.railway.app/docs",
         note: "Interactive documentation for all YUYAY Intelligence API endpoints.",
       },
       {
-        label: "REST API — ReDoc",
+        label: "REST API, ReDoc",
         href: "https://yuyay-production-2e45.up.railway.app/redoc",
         note: "Alternative API reference in ReDoc format.",
       },
@@ -43,12 +43,12 @@ const resources: Resource[] = [
     category: "United Nations Frameworks",
     items: [
       {
-        label: "SDG 17 — Partnerships for the Goals",
+        label: "SDG 17, Partnerships for the Goals",
         href: "https://sdgs.un.org/goals/goal17",
         note: "The 17th Sustainable Development Goal: strengthening global partnerships and means of implementation.",
       },
       {
-        label: "UNDRIP — UN Declaration on Indigenous Peoples",
+        label: "UNDRIP, UN Declaration on Indigenous Peoples",
         href: "https://www.un.org/development/desa/indigenouspeoples/wp-content/uploads/sites/19/2018/11/UNDRIP_E_web.pdf",
         note: "The landmark 2007 declaration establishing the collective rights of indigenous peoples worldwide.",
       },
@@ -63,7 +63,7 @@ const resources: Resource[] = [
     category: "Standards & Governance",
     items: [
       {
-        label: "ISO 26000 — Social Responsibility",
+        label: "ISO 26000, Social Responsibility",
         href: "https://www.iso.org/iso-26000-social-responsibility.html",
         note: "International guidance standard on social responsibility, covering seven core subjects.",
       },
@@ -78,9 +78,9 @@ const resources: Resource[] = [
     category: "Methodological Frameworks",
     items: [
       {
-        label: "Edward de Bono — Lateral Thinking",
+        label: "Edward de Bono, Lateral Thinking",
         href: "https://www.debono.com/lateral-thinking",
-        note: "The official de Bono Group resource on lateral thinking — the intellectual foundation of the PO provocation operator.",
+        note: "The official de Bono Group resource on lateral thinking, the intellectual foundation of the PO provocation operator.",
       },
       {
         label: "PO: Beyond Yes and No (Book)",

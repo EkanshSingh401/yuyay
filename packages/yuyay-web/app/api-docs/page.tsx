@@ -331,13 +331,13 @@ export default function ApiDocsPage() {
               marginBottom: "1.2rem",
             }}
           >
-            Live Swagger UI — try any endpoint directly in the browser.
+            Live Swagger UI, try any endpoint directly in the browser.
           </p>
         </div>
         <iframe
           src={`${BASE}/docs`}
           className="docs-frame"
-          title="YUYAY API — Swagger UI"
+          title="YUYAY API, Swagger UI"
         />
       </section>
     </main>

@@ -175,8 +175,8 @@ export default function EvaluatePage() {
             }}
           >
             Answer each transformer question as honestly as possible. YES
-            confirms alignment. NO marks a gap. PO — Edward de Bono&apos;s
-            provocation operator — signals a dimension in movement, neither
+            confirms alignment. NO marks a gap. PO, Edward de Bono&apos;s
+            provocation operator, signals a dimension in movement, neither
             confirmed nor rejected.
           </p>
         </div>

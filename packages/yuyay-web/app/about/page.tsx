@@ -71,8 +71,8 @@ export default function AboutPage() {
                 marginBottom: "1.4rem",
               }}
             >
-              YUYAY comes from the Quechua language — the living tongue
-              of the Andean peoples — where it carries the meaning of
+              YUYAY comes from the Quechua language, the living tongue
+              of the Andean peoples, where it carries the meaning of
               thought, knowledge, and wisdom held in relation to community
               and the natural world.
             </p>
@@ -85,7 +85,7 @@ export default function AboutPage() {
               }}
             >
               Quechua was spoken across the Inca Empire, one of the most
-              sophisticated civilisations in recorded history — one built
+              sophisticated civilisations in recorded history, one built
               on collective intelligence, reciprocity, and ecological
               stewardship. In naming this framework YUYAY, Mitchell Gold
               acknowledges that the intelligence the world needs is not
@@ -148,7 +148,7 @@ export default function AboutPage() {
               Mitchell Gold is a systems thinker, educator, and designer
               of frameworks for collective intelligence. His work sits at
               the intersection of organisational development, social
-              innovation, and planetary governance — drawing on decades of
+              innovation, and planetary governance, drawing on decades of
               direct engagement with communities, institutions, and
               decision-makers across five continents.
             </p>
@@ -161,7 +161,7 @@ export default function AboutPage() {
               }}
             >
               The YUYAY framework emerged from a recognition that existing
-              decision-making tools — however sophisticated — tend to
+              decision-making tools, however sophisticated, tend to
               optimise for efficiency rather than alignment. Mitchell set
               out to create something different: an evaluative lens that
               holds the full complexity of human potential, and asks
@@ -236,7 +236,7 @@ export default function AboutPage() {
               }}
             >
               YUYAY represents one of its flagship framework contributions
-              — a practical instrument for evaluating whether decisions made
+              , a practical instrument for evaluating whether decisions made
               by organisations, governments, and individuals are coherent
               with humanity&apos;s highest stated values and international
               commitments.
@@ -277,20 +277,20 @@ export default function AboutPage() {
           >
             {[
               {
-                title: "Edward de Bono — PO",
-                body: "The PO provocation operator — a tool for lateral thinking that suspends binary judgement and creates space for creative alternatives. PO is the third response in the YUYAY questionnaire: neither yes nor no, but a mark of movement.",
+                title: "Edward de Bono , PO",
+                body: "The PO provocation operator , a tool for lateral thinking that suspends binary judgement and creates space for creative alternatives. PO is the third response in the YUYAY questionnaire: neither yes nor no, but a mark of movement.",
               },
               {
-                title: "SDG 17 — Partnerships for the Goals",
+                title: "SDG 17 , Partnerships for the Goals",
                 body: "The 17th Sustainable Development Goal calls for the global partnerships, coherent policy frameworks, and multi-stakeholder engagement necessary to achieve the remaining 16. YUYAY embeds SDG 17 as a structural commitment to relational and systemic thinking.",
               },
               {
-                title: "ISO 26000 — Social Responsibility",
+                title: "ISO 26000 , Social Responsibility",
                 body: "The international standard for organisational social responsibility defines core subjects including human rights, labour practices, environmental care, fair operating practices, consumer issues, and community involvement. YUYAY uses ISO 26000 as a benchmark for the Shadow dimensions of each archetype.",
               },
               {
-                title: "UNDRIP — Indigenous Rights",
-                body: "The United Nations Declaration on the Rights of Indigenous Peoples enshrines the rights of indigenous peoples to their lands, cultures, identities, and knowledge systems. YUYAY recognises indigenous epistemology — including Quechua concepts of reciprocity and relational knowledge — as foundational.",
+                title: "UNDRIP , Indigenous Rights",
+                body: "The United Nations Declaration on the Rights of Indigenous Peoples enshrines the rights of indigenous peoples to their lands, cultures, identities, and knowledge systems. YUYAY recognises indigenous epistemology , including Quechua concepts of reciprocity and relational knowledge , as foundational.",
               },
             ].map((item, i) => (
               <div

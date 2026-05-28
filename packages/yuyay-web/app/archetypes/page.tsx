@@ -51,7 +51,7 @@ export default async function ArchetypesPage() {
               lineHeight: 1.85,
             }}
           >
-            Each archetype represents a unique dimension of human potential —
+            Each archetype represents a unique dimension of human potential,
             with gifts to cultivate and shadows to transcend.
           </p>
         </div>

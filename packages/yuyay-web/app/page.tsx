@@ -74,7 +74,7 @@ export default function Home() {
           }}
         >
           A multi-dimensional framework evaluating alignment across{" "}
-          twelve archetype dimensions — integrating wisdom, compassion,
+          twelve archetype dimensions, integrating wisdom, compassion,
           and planetary consciousness into every decision.
         </p>
 
@@ -186,7 +186,7 @@ export default function Home() {
                 marginBottom: "1.5rem",
               }}
             >
-              YUYAY — from the Quechua word for knowledge — is a
+              YUYAY, from the Quechua word for knowledge, is a
               self-assessment framework built on twelve dimensions of
               human potential. From Vision and Structure to Compassion
               and Planetary Stewardship, every decision can be weighed
@@ -200,8 +200,8 @@ export default function Home() {
                 lineHeight: 1.9,
               }}
             >
-              Through ten transformer questions — each answerable as
-              YES, NO, or PO — individuals and organisations evaluate
+              Through ten transformer questions, each answerable as
+              YES, NO, or PO, individuals and organisations evaluate
               whether their decisions demonstrate the coherence,
               long-term thinking, and relational intelligence that the
               Co-Creation Wheel demands.
@@ -241,7 +241,7 @@ export default function Home() {
             }}
           >
             PO is a term coined by Edward de Bono to represent lateral
-            thinking — a deliberate provocation that moves beyond binary
+            thinking, a deliberate provocation that moves beyond binary
             logic. Where YES confirms and NO rejects, PO suspends
             judgement and opens a space for possibility.
           </p>
@@ -255,7 +255,7 @@ export default function Home() {
             }}
           >
             In the YUYAY framework, PO marks the dimensions where deeper
-            inquiry is warranted — where an answer exists not yet in
+            inquiry is warranted, where an answer exists not yet in
             full alignment, but in movement toward it.
           </p>
         </div>
@@ -295,7 +295,7 @@ export default function Home() {
               {
                 n: "01",
                 title: "Select an Archetype",
-                body: "Each of the twelve dimensions — from the Seer and the Weaver to the Warrior and the Steward — represents a unique pattern of gifts and shadows in human potential.",
+                body: "Each of the twelve dimensions, from the Seer and the Weaver to the Warrior and the Steward, represents a unique pattern of gifts and shadows in human potential.",
               },
               {
                 n: "02",
@@ -305,7 +305,7 @@ export default function Home() {
               {
                 n: "03",
                 title: "Receive Your Report",
-                body: "FIOS — the Framework Intelligence Orchestration System — evaluates responses across OpenAI, Anthropic, and Google concurrently, scoring coherence against the YUYAY framework.",
+                body: "FIOS, the Framework Intelligence Orchestration System, evaluates responses across OpenAI, Anthropic, and Google concurrently, scoring coherence against the YUYAY framework.",
               },
             ].map((p, i) => (
               <div
