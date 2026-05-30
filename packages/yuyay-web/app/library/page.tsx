@@ -1,3 +1,5 @@
+"use client";
+
 interface Resource {
   category: string;
   items: { label: string; href: string; note: string }[];
