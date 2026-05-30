@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, EB_Garamond } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import Nav from "./components/Nav";
 import Footer from "./components/Footer";
 import "./globals.css";
@@ -33,12 +34,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${garamond.variable}`}>
-      <body>
-        <Nav />
-        {children}
-        <Footer />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className={`${playfair.variable} ${garamond.variable}`}>
+        <body>
+          <Nav />
+          {children}
+          <Footer />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
