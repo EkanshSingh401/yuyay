@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from yuyay.wheel import WHEEL_SECTORS, evaluate_whole_system, get_sector
 
-from app.routers.auth import get_current_user
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/wheel", tags=["wheel"])
 

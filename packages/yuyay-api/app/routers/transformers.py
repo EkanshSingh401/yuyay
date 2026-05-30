@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from yuyay.transformers import ALL_TRANSFORMERS, get_transformer_by_id
 
-from app.routers.auth import get_current_user
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/transformers", tags=["transformers"])
 

@@ -8,7 +8,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from yuyay.fios import FIOS, FIOSConfig
 
-from app.routers.auth import get_current_user
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1", tags=["compare"])
 

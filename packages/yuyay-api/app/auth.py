@@ -1,79 +1,87 @@
-"""JWT authentication for the YUYAY Intelligence API."""
+"""Clerk JWT authentication for the YUYAY Intelligence API."""
 
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta
 from typing import Any
 
-import bcrypt
-from jose import JWTError, jwt
+import httpx
+import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "yuyay-secret-key-change-in-production")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+CLERK_JWKS_URL = os.environ.get(
+    "CLERK_JWKS_URL",
+    "https://grown-reptile-47.clerk.accounts.dev/.well-known/jwks.json",
+)
 
+security = HTTPBearer()
 
-def hash_password(password: str) -> str:
-    """Hash a plain text password using bcrypt.
-
-    Args:
-        password: The plain text password to hash.
-
-    Returns:
-        The bcrypt hashed password string.
-    """
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+_jwks_cache: dict[str, Any] | None = None
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plain password against a hashed password.
+async def get_jwks() -> dict[str, Any]:
+    """Fetch Clerk's public keys for JWT verification.
 
-    Args:
-        plain_password: The raw password from the user.
-        hashed_password: The bcrypt hashed password from the database.
+    Caches the keys in memory to avoid fetching on every request.
 
     Returns:
-        True if the password matches, False otherwise.
+        The JWKS dict containing Clerk's public keys.
     """
-    return bool(bcrypt.checkpw(plain_password.encode(), hashed_password.encode()))
+    global _jwks_cache
+    if _jwks_cache is None:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(CLERK_JWKS_URL)
+            response.raise_for_status()
+            _jwks_cache = response.json()
+    return _jwks_cache
 
 
-FAKE_USERS_DB: dict[str, dict[str, Any]] = {
-    "admin": {
-        "username": "admin",
-        "hashed_password": hash_password("yuyay2026"),
-    }
-}
-
-
-def create_access_token(data: dict[str, Any]) -> str:
-    """Create a signed JWT access token.
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    """Verify a Clerk JWT token and return the user ID.
 
     Args:
-        data: The payload to encode into the token.
+        credentials: The Bearer token from the Authorization header.
 
     Returns:
-        A signed JWT token string.
+        The Clerk user ID (sub claim) from the verified token.
+
+    Raises:
+        HTTPException: 401 if the token is invalid or expired.
     """
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return str(jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM))
-
-
-def decode_token(token: str) -> str | None:
-    """Decode and verify a JWT token.
-
-    Args:
-        token: The JWT token string to decode.
-
-    Returns:
-        The username from the token, or None if invalid.
-    """
+    token = credentials.credentials
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str | None = payload.get("sub")
-        return username
-    except JWTError:
-        return None
+        jwks = await get_jwks()
+        signing_key = jwt.algorithms.RSAAlgorithm.from_jwk(
+            next(key for key in jwks["keys"] if key.get("use") == "sig")
+        )
+        payload = jwt.decode(
+            token,
+            signing_key,
+            algorithms=["RS256"],
+            options={"verify_aud": False},
+        )
+        user_id: str = payload.get("sub", "")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token — no subject claim.",
+            )
+        return user_id
+    except StopIteration:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No signing key found in JWKS.",
+        )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired.",
+        )
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token: {str(e)}",
+        )

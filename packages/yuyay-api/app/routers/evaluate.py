@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from yuyay.exceptions import InvalidResponseError
 from yuyay.questionnaire import process_responses
 
+from app.auth import get_current_user
 from app.db import get_session
 from app.logger import get_logger
 from app.models import EvaluationSession
-from app.routers.auth import get_current_user
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["evaluate"])

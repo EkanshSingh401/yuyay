@@ -7,9 +7,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import get_current_user
 from app.db import get_session
 from app.models import EvaluationSession
-from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
 

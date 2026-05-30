@@ -13,7 +13,6 @@ from app.db import init_db
 from app.logger import configure_logging, get_logger
 from app.routers import (
     archetypes,
-    auth,
     compare,
     evaluate,
     metrics,
@@ -55,7 +54,6 @@ async def startup_event() -> None:
     logger.info("startup_complete", version="0.1.0")
 
 
-app.include_router(auth.router)
 app.include_router(archetypes.router)
 app.include_router(compare.router)
 app.include_router(transformers.router)
