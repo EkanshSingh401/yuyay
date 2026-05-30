@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "@clerk/nextjs";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -20,13 +21,7 @@ interface EvalResult {
 }
 
 type Answer = "YES" | "NO" | "PO";
-type Phase =
-  | "loading"
-  | "questions"
-  | "auth"
-  | "submitting"
-  | "results"
-  | "error";
+type Phase = "loading" | "questions" | "submitting" | "results" | "error";
 
 function AnswerButton({
   value,
@@ -37,11 +32,7 @@ function AnswerButton({
   selected: boolean;
   onClick: () => void;
 }) {
-  const cls =
-    selected
-      ? `answer-btn sel-${value.toLowerCase()}`
-      : "answer-btn";
-
+  const cls = selected ? `answer-btn sel-${value.toLowerCase()}` : "answer-btn";
   return (
     <button type="button" className={cls} onClick={onClick}>
       {value}
@@ -50,13 +41,10 @@ function AnswerButton({
 }
 
 export default function EvaluatePage() {
+  const { getToken } = useAuth();
   const [questions, setQuestions] = useState<Transformer[]>([]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [phase, setPhase] = useState<Phase>("loading");
-  const [token, setToken] = useState<string | null>(null);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
   const [result, setResult] = useState<EvalResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -80,14 +68,16 @@ export default function EvaluatePage() {
     setAnswers((prev) => ({ ...prev, [id]: val }));
   };
 
-  const submitEvaluation = async (jwt: string) => {
+  const handleSubmit = async () => {
+    if (!allAnswered) return;
     setPhase("submitting");
     try {
+      const token = await getToken();
       const res = await fetch(`${API}/api/v1/evaluate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${jwt}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ responses: answers }),
       });
@@ -102,39 +92,6 @@ export default function EvaluatePage() {
       setErrorMsg(e instanceof Error ? e.message : "An unknown error occurred.");
       setPhase("error");
     }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError("");
-    const form = new FormData();
-    form.append("username", username);
-    form.append("password", password);
-    try {
-      const res = await fetch(`${API}/api/v1/auth/login`, {
-        method: "POST",
-        body: form,
-      });
-      if (!res.ok) {
-        setLoginError("Invalid credentials. Please try again.");
-        return;
-      }
-      const data = await res.json();
-      const jwt: string = data.access_token;
-      setToken(jwt);
-      await submitEvaluation(jwt);
-    } catch {
-      setLoginError("Login failed. Please check your connection.");
-    }
-  };
-
-  const handleSubmit = () => {
-    if (!allAnswered) return;
-    if (!token) {
-      setPhase("auth");
-      return;
-    }
-    submitEvaluation(token);
   };
 
   const restart = () => {
@@ -185,10 +142,7 @@ export default function EvaluatePage() {
       {/* ── Loading ──────────────────────────────────────────────── */}
       {phase === "loading" && (
         <section style={{ padding: "5rem 0" }}>
-          <div
-            className="container-narrow"
-            style={{ color: "var(--muted)", fontSize: "0.9rem" }}
-          >
+          <div className="container-narrow" style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
             Loading questions…
           </div>
         </section>
@@ -198,13 +152,7 @@ export default function EvaluatePage() {
       {phase === "error" && (
         <section style={{ padding: "5rem 0" }}>
           <div className="container-narrow">
-            <p
-              style={{
-                color: "var(--red)",
-                marginBottom: "2rem",
-                lineHeight: 1.7,
-              }}
-            >
+            <p style={{ color: "var(--red)", marginBottom: "2rem", lineHeight: 1.7 }}>
               {errorMsg}
             </p>
             <button className="btn btn-ghost" onClick={restart}>
@@ -215,10 +163,9 @@ export default function EvaluatePage() {
       )}
 
       {/* ── Questionnaire ────────────────────────────────────────── */}
-      {(phase === "questions" || phase === "auth") && (
+      {phase === "questions" && (
         <section style={{ padding: "4rem 0 2rem" }}>
           <div className="container-narrow">
-
             {questions.map((q, i) => (
               <div
                 key={q.id}
@@ -227,13 +174,7 @@ export default function EvaluatePage() {
                   borderBottom: "1px solid var(--border)",
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "1.5rem",
-                    alignItems: "flex-start",
-                  }}
-                >
+                <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
                   <span
                     style={{
                       fontFamily: "var(--font-garamond)",
@@ -319,119 +260,24 @@ export default function EvaluatePage() {
               </div>
             )}
 
-            {/* Auth gate */}
-            {phase === "auth" && (
-              <div
+            <div style={{ padding: "2.5rem 0" }}>
+              <button
+                className="btn btn-primary"
+                onClick={handleSubmit}
+                disabled={!allAnswered}
                 style={{
-                  padding: "2.5rem",
-                  border: "1px solid var(--border-2)",
-                  marginBottom: "2rem",
-                  background: "var(--surface)",
+                  opacity: allAnswered ? 1 : 0.4,
+                  cursor: allAnswered ? "pointer" : "not-allowed",
                 }}
               >
-                <p
-                  style={{
-                    fontSize: "0.8rem",
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: "var(--gold)",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  Sign in to submit
+                Submit Evaluation
+              </button>
+              {!allAnswered && (
+                <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginTop: "0.75rem" }}>
+                  Answer all questions to continue.
                 </p>
-                <p
-                  style={{
-                    color: "var(--muted)",
-                    fontSize: "0.95rem",
-                    marginBottom: "1.8rem",
-                  }}
-                >
-                  An account is required to save your evaluation and
-                  generate a session report.
-                </p>
-                <form
-                  onSubmit={handleLogin}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.8rem",
-                  }}
-                >
-                  <input
-                    className="input"
-                    type="text"
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    autoComplete="username"
-                  />
-                  <input
-                    className="input"
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                  />
-                  {loginError && (
-                    <p
-                      style={{
-                        color: "var(--red)",
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      {loginError}
-                    </p>
-                  )}
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "0.75rem",
-                      marginTop: "0.5rem",
-                    }}
-                  >
-                    <button type="submit" className="btn btn-primary">
-                      Sign In &amp; Submit
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={() => setPhase("questions")}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* Submit button */}
-            {phase === "questions" && (
-              <div style={{ padding: "2.5rem 0" }}>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSubmit}
-                  disabled={!allAnswered}
-                  style={{ opacity: allAnswered ? 1 : 0.4, cursor: allAnswered ? "pointer" : "not-allowed" }}
-                >
-                  Submit Evaluation
-                </button>
-                {!allAnswered && (
-                  <p
-                    style={{
-                      color: "var(--muted)",
-                      fontSize: "0.82rem",
-                      marginTop: "0.75rem",
-                    }}
-                  >
-                    Answer all questions to continue.
-                  </p>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </section>
       )}
@@ -471,7 +317,6 @@ export default function EvaluatePage() {
               Session ID: {result.session_id}
             </p>
 
-            {/* Score breakdown */}
             <div
               style={{
                 display: "grid",
@@ -491,8 +336,7 @@ export default function EvaluatePage() {
                   style={{
                     padding: "2rem",
                     textAlign: "center",
-                    borderRight:
-                      i < 2 ? "1px solid var(--border)" : undefined,
+                    borderRight: i < 2 ? "1px solid var(--border)" : undefined,
                   }}
                 >
                   <div
@@ -520,7 +364,6 @@ export default function EvaluatePage() {
               ))}
             </div>
 
-            {/* Summary */}
             <div
               style={{
                 padding: "2rem 2.5rem",
@@ -541,18 +384,11 @@ export default function EvaluatePage() {
               >
                 Summary
               </p>
-              <p
-                style={{
-                  fontSize: "1.05rem",
-                  color: "var(--secondary)",
-                  lineHeight: 1.85,
-                }}
-              >
+              <p style={{ fontSize: "1.05rem", color: "var(--secondary)", lineHeight: 1.85 }}>
                 {result.summary}
               </p>
             </div>
 
-            {/* Flags */}
             {result.flags.length > 0 && (
               <div style={{ marginBottom: "2.5rem" }}>
                 <p
