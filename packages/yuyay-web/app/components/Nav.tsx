@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth, UserButton } from "@clerk/nextjs";
 
 const links = [
   { href: "/archetypes", label: "Archetypes" },
@@ -13,6 +14,7 @@ const links = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const { isSignedIn } = useAuth();
 
   return (
     <nav className="nav">
@@ -29,6 +31,20 @@ export default function Nav() {
             {label}
           </Link>
         ))}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        {isSignedIn ? (
+          <UserButton />
+        ) : (
+          <>
+            <Link href="/sign-in" className="btn btn-ghost">
+              Sign In
+            </Link>
+            <Link href="/sign-up" className="btn btn-primary">
+              Sign Up
+            </Link>
+          </>
+        )}
       </div>
     </nav>
   );

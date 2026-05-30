@@ -73,6 +73,11 @@ export default function EvaluatePage() {
     setPhase("submitting");
     try {
       const token = await getToken();
+      if (!token) {
+        setErrorMsg("You need to be signed in to submit an evaluation. Please sign in and try again.");
+        setPhase("error");
+        return;
+      }
       const res = await fetch(`${API}/api/v1/evaluate`, {
         method: "POST",
         headers: {
