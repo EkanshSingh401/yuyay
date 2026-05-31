@@ -4,12 +4,64 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yuyay"
-version = "0.3.0"
-description = "YUYAY Intelligence Framework"
+version = "0.3.1"
+description = "YUYAY Intelligence Framework — UN Office of the Future"
 requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+keywords = ["yuyay", "un", "intelligence", "archetypes", "evaluation", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
     "tenacity>=9.0.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.mypy]
+strict = true
+
+[tool.ruff]
+line-length = 88
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["yuyay*"]
+
+[project.optional-dependencies]
+dev = [
+    "black>=26.3.1",
+    "ruff>=0.15.9",
+    "mypy>=1.20.0",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.1.0",
+    "isort>=6.0.1",
+    "tenacity>=9.0.0",
+    "pytest-asyncio>=1.4.0",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "anthropic",
+    "openai",
+    "google.generativeai",
+    "google",
+    "tenacity",
+]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
