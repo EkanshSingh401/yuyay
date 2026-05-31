@@ -244,6 +244,18 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid rgba(224, 144, 80, 0.22);
 }
 
+.tag-red {
+  color: var(--red);
+  background: var(--red-dim);
+  border: 1px solid rgba(224, 96, 96, 0.22);
+}
+
+.tag-gold {
+  color: var(--gold);
+  background: var(--gold-dim);
+  border: 1px solid rgba(201, 168, 76, 0.22);
+}
+
 /* ─── Evaluate / Questionnaire ─────────────────────────────────── */
 
 .answer-btn {

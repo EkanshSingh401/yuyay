@@ -7,6 +7,9 @@ import { useAuth, UserButton } from "@clerk/nextjs";
 const links = [
   { href: "/archetypes", label: "Archetypes" },
   { href: "/evaluate", label: "Evaluate" },
+  { href: "/query", label: "Query" },
+  { href: "/sessions", label: "Sessions" },
+  { href: "/compare", label: "Compare" },
   { href: "/about", label: "About" },
   { href: "/library", label: "Library" },
   { href: "/api-docs", label: "API" },
