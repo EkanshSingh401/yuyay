@@ -95,7 +95,9 @@ Features:
 
 The Seer · The Architect · The Bridgebuilder · The Steward · The Navigator · The Maker · The Catalyst · The Harmonizer · The Sage · The Oracle · The Alchemist · The Weaver
 
-## The 10 Transformer Questions
+## The Transformer Questions (10 questions, 12 response fields)
+
+Questions 1 and 2 have sub-parts (a and b), giving 12 total response fields.
 
 Each answerable as **YES**, **NO**, or **PO** (Edward de Bono's lateral thinking operator):
 
