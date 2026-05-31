@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from slowapi import Limiter
+from tenacity import RetryError
 from yuyay.fios import FIOS, FIOSConfig
 
 from app.auth import get_current_user
@@ -108,6 +109,12 @@ async def query(
         result = await fios.query(request_body.prompt)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    except RetryError as e:
+        cause = e.last_attempt.exception()
+        raise HTTPException(
+            status_code=500,
+            detail=f"LLM query failed after retries: {cause}",
+        ) from cause
     except Exception as e:
         raise HTTPException(
             status_code=500,

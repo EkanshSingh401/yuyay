@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from slowapi import Limiter
+from tenacity import RetryError
 from yuyay.fios import FIOS, FIOSConfig
 
 from app.auth import get_current_user
@@ -135,6 +136,12 @@ async def compare(
     try:
         fios = FIOS(configs[0])
         results = await fios.query_all_providers(request_body.prompt, configs)
+    except RetryError as e:
+        cause = e.last_attempt.exception()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Comparison failed after retries: {cause}",
+        ) from cause
     except Exception as e:
         raise HTTPException(
             status_code=500,
