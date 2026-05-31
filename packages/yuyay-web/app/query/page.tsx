@@ -23,7 +23,6 @@ const PROVIDERS = [
   { value: "anthropic", label: "Anthropic Claude", model: "claude-sonnet-4-6" },
   { value: "openai", label: "OpenAI GPT", model: "gpt-4" },
   { value: "google", label: "Google Gemini", model: "gemini-pro" },
-  { value: "mock", label: "Mock (no API key needed)", model: "mock-model" },
 ];
 
 export default function QueryPage() {
