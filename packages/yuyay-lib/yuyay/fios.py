@@ -473,17 +473,20 @@ class GoogleAdapter(LLMProvider):
             )
             latency_ms = (time.monotonic() - start) * 1000
 
-            response_text = response.text
+            response_text = response.text or ""
             coherence_score, flags = evaluate_coherence(response_text)
-            cost = estimate_cost("google", 0, 0)
+            usage = response.usage_metadata
+            input_tokens = usage.prompt_token_count or 0 if usage else 0
+            output_tokens = usage.candidates_token_count or 0 if usage else 0
+            cost = estimate_cost("google", input_tokens, output_tokens)
             self.circuit_breaker.record_success()
             return FIOSResult(
                 provider="google",
                 model=self.config.model,
                 prompt=full_prompt,
                 response=response_text,
-                input_tokens=0,
-                output_tokens=0,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
                 latency_ms=latency_ms,
                 coherence_score=coherence_score,
                 flags=flags,

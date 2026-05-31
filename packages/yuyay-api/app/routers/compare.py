@@ -92,7 +92,7 @@ class CompareResponse(BaseModel):
 
 
 @router.post("/compare", response_model=CompareResponse)
-@limiter.limit("5/minute")
+@limiter.limit("1/minute;5/day")
 async def compare(
     request: Request,
     request_body: CompareRequest,

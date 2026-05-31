@@ -74,7 +74,7 @@ class QueryResponse(BaseModel):
 
 
 @router.post("/query", response_model=QueryResponse)
-@limiter.limit("10/minute")
+@limiter.limit("3/minute;20/day")
 async def query(
     request: Request,
     request_body: QueryRequest,
