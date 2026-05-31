@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import abc
 import asyncio
+import os
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -316,7 +317,9 @@ class AnthropicAdapter(LLMProvider):
         try:
             import anthropic
 
-            client = anthropic.AsyncAnthropic(api_key=self.config.api_key)
+            client = anthropic.AsyncAnthropic(
+                api_key=self.config.api_key or os.environ.get("ANTHROPIC_API_KEY")
+            )
             context = build_yuyay_context()
             full_prompt = f"{context}\n\nUser Query: {prompt}"
 
@@ -385,7 +388,9 @@ class OpenAIAdapter(LLMProvider):
         try:
             import openai
 
-            client = openai.AsyncOpenAI(api_key=self.config.api_key)
+            client = openai.AsyncOpenAI(
+                api_key=self.config.api_key or os.environ.get("OPENAI_API_KEY")
+            )
             context = build_yuyay_context()
 
             start = time.monotonic()
@@ -456,7 +461,9 @@ class GoogleAdapter(LLMProvider):
         try:
             import google.generativeai as genai
 
-            genai.configure(api_key=self.config.api_key)
+            genai.configure(
+                api_key=self.config.api_key or os.environ.get("GOOGLE_API_KEY")
+            )
             model = genai.GenerativeModel(self.config.model)
             context = build_yuyay_context()
             full_prompt = f"{context}\n\nUser Query: {prompt}"
