@@ -5,14 +5,24 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from yuyay.fios import FIOS, FIOSConfig
 
 from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1", tags=["compare"])
 
-limiter = Limiter(key_func=get_remote_address)
+
+def get_user_key(request: Request) -> str:
+    """Rate limit by user token instead of IP address.
+    Falls back to IP if no auth header present.
+    """
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return f"user:{auth.split(' ')[1][:20]}"
+    return request.client.host if request.client else "unknown"
+
+
+limiter = Limiter(key_func=get_user_key)
 
 
 class ProviderConfig(BaseModel):

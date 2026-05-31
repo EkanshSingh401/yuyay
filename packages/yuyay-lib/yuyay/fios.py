@@ -19,7 +19,6 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-
 from yuyay.archetypes import ALL_ARCHETYPES
 from yuyay.transformers import ALL_TRANSFORMERS
 
@@ -459,17 +458,19 @@ class GoogleAdapter(LLMProvider):
                 f"too many failures, try again later."
             )
         try:
-            import google.generativeai as genai
+            from google import genai
 
-            genai.configure(
+            client = genai.Client(
                 api_key=self.config.api_key or os.environ.get("GOOGLE_API_KEY")
             )
-            model = genai.GenerativeModel(self.config.model)
             context = build_yuyay_context()
             full_prompt = f"{context}\n\nUser Query: {prompt}"
 
             start = time.monotonic()
-            response = await model.generate_content_async(full_prompt)
+            response = await client.aio.models.generate_content(
+                model=self.config.model,
+                contents=full_prompt,
+            )
             latency_ms = (time.monotonic() - start) * 1000
 
             response_text = response.text
