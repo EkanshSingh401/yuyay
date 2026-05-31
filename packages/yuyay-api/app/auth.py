@@ -8,8 +8,7 @@ from typing import Any
 import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt import ExpiredSignatureError, InvalidTokenError, PyJWT
-from jwt.algorithms import RSAAlgorithm
+from jose import JWTError, jwt
 
 CLERK_JWKS_URL = os.environ.get(
     "CLERK_JWKS_URL",
@@ -55,10 +54,17 @@ async def get_current_user(
     token = credentials.credentials
     try:
         jwks = await get_jwks()
-        signing_key = RSAAlgorithm.from_jwk(
-            next(key for key in jwks["keys"] if key.get("use") == "sig")
-        )
-        payload = PyJWT().decode(
+        signing_key = None
+        for key in jwks["keys"]:
+            if key.get("use") == "sig":
+                signing_key = key
+                break
+        if signing_key is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No signing key found in JWKS.",
+            )
+        payload = jwt.decode(
             token,
             signing_key,
             algorithms=["RS256"],
@@ -71,17 +77,7 @@ async def get_current_user(
                 detail="Invalid token — no subject claim.",
             )
         return user_id
-    except StopIteration:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No signing key found in JWKS.",
-        )
-    except ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired.",
-        )
-    except InvalidTokenError as e:
+    except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token: {str(e)}",

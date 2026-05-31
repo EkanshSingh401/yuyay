@@ -23,6 +23,7 @@ dependencies = [
     "tenacity>=9.0.0",
     "httpx>=0.28.0",
     "PyJWT>=2.8.0",
+    "python-jose[cryptography]>=3.5.0",
 ]
 
 [project.optional-dependencies]
