@@ -6,9 +6,10 @@ import os
 from typing import Any
 
 import httpx
-import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import ExpiredSignatureError, InvalidTokenError, PyJWT
+from jwt.algorithms import RSAAlgorithm
 
 CLERK_JWKS_URL = os.environ.get(
     "CLERK_JWKS_URL",
@@ -54,10 +55,10 @@ async def get_current_user(
     token = credentials.credentials
     try:
         jwks = await get_jwks()
-        signing_key = jwt.algorithms.RSAAlgorithm.from_jwk(
+        signing_key = RSAAlgorithm.from_jwk(
             next(key for key in jwks["keys"] if key.get("use") == "sig")
         )
-        payload = jwt.decode(
+        payload = PyJWT().decode(
             token,
             signing_key,
             algorithms=["RS256"],
@@ -75,12 +76,12 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No signing key found in JWKS.",
         )
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired.",
         )
-    except jwt.InvalidTokenError as e:
+    except InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token: {str(e)}",
