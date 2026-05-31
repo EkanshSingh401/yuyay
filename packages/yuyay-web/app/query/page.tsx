@@ -22,7 +22,7 @@ type Phase = "idle" | "loading" | "results" | "error";
 const PROVIDERS = [
   { value: "anthropic", label: "Anthropic Claude", model: "claude-sonnet-4-6" },
   { value: "openai", label: "OpenAI GPT", model: "gpt-5.4-mini" },
-  { value: "google", label: "Google Gemini", model: "gemini-1.5-flash" },
+  { value: "google", label: "Google Gemini", model: "gemini-2.5-flash" },
 ];
 
 export default function QueryPage() {
