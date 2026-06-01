@@ -1,3 +1,4 @@
+"use client";
 const DOCS_URL = "https://yuyay-production-2e45.up.railway.app/docs";
 
 export default function ApiDocsPage() {
