@@ -294,8 +294,8 @@ export default function Home() {
             {[
               {
                 n: "01",
-                title: "Select an Archetype",
-                body: "Each of the twelve dimensions, from the Seer and the Weaver to the Warrior and the Steward, represents a unique pattern of gifts and shadows in human potential.",
+                title: "Answer Twelve Questions",
+                body: "Work through the ten transformer questions — each answerable as YES, NO, or PO. Questions 1 and 2 have sub-parts, giving twelve total response fields.",
               },
               {
                 n: "02",
@@ -350,6 +350,130 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── FIOS Intelligence ───────────────────────────────────── */}
+      <section
+        style={{
+          borderTop: "1px solid var(--border)",
+          padding: "7rem 0",
+          background: "var(--surface)",
+        }}
+      >
+        <div className="container-narrow" style={{ textAlign: "center", marginBottom: "4rem" }}>
+          <span className="eyebrow" style={{ marginBottom: "1.5rem" }}>
+            FIOS Intelligence
+          </span>
+          <h2
+            style={{
+              fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)",
+              marginBottom: "1.5rem",
+            }}
+          >
+            Every intelligence, simultaneously
+          </h2>
+          <p
+            style={{
+              fontSize: "1.1rem",
+              color: "var(--secondary)",
+              lineHeight: 1.9,
+              maxWidth: "600px",
+              marginInline: "auto",
+            }}
+          >
+            The Framework Intelligence Orchestration System routes your
+            questions through OpenAI, Anthropic, and Google concurrently,
+            aggregating responses so you can examine consensus, divergence,
+            and the full texture of machine reasoning in a single view.
+          </p>
+        </div>
+
+        <div
+          style={{
+            borderTop: "1px solid var(--border)",
+            borderBottom: "1px solid var(--border)",
+          }}
+        >
+          <div
+            className="container"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: 0,
+            }}
+          >
+            {[
+              {
+                label: "Query",
+                title: "Ask the framework",
+                body: "Pose any question to the FIOS orchestration layer and receive parallel responses from OpenAI, Anthropic, and Google. Useful for stress-testing assumptions against multiple models of reasoning.",
+              },
+              {
+                label: "Compare",
+                title: "Examine the differences",
+                body: "Run a prompt across all three providers and inspect how each interprets the YUYAY criteria. Side-by-side scoring surfaces where models converge and where judgement diverges.",
+              },
+            ].map((card, i) => (
+              <div
+                key={card.label}
+                style={{
+                  padding: "3rem 2.5rem",
+                  borderRight: i < 1 ? "1px solid var(--border)" : undefined,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--font-garamond)",
+                    fontSize: "0.68rem",
+                    letterSpacing: "0.2em",
+                    color: "var(--gold)",
+                    marginBottom: "1.2rem",
+                    opacity: 0.8,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {card.label}
+                </div>
+                <h3
+                  style={{
+                    fontSize: "1.25rem",
+                    fontFamily: "var(--font-playfair)",
+                    marginBottom: "1rem",
+                    color: "var(--fg)",
+                  }}
+                >
+                  {card.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: "0.97rem",
+                    color: "var(--muted)",
+                    lineHeight: 1.85,
+                  }}
+                >
+                  {card.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            paddingTop: "3.5rem",
+          }}
+        >
+          <Link href="/query" className="btn btn-primary">
+            Query the Framework
+          </Link>
+          <Link href="/compare" className="btn btn-ghost">
+            Compare Providers
+          </Link>
         </div>
       </section>
 

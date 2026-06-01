@@ -10,14 +10,9 @@ const resources: Resource[] = [
     category: "Code & Software",
     items: [
       {
-        label: "yuyay on TestPyPI",
-        href: "https://test.pypi.org/project/yuyay/",
-        note: "Python library, FIOS orchestration, archetypes, transformer questions, and evaluation engine.",
-      },
-      {
-        label: "GitHub Repository",
-        href: "https://github.com/mitchell-gold/yuyay",
-        note: "Source code for the yuyay library, the FastAPI backend, and this Next.js frontend.",
+        label: "yuyay on PyPI",
+        href: "https://pypi.org/project/yuyay/",
+        note: "Install with pip install yuyay. Published v0.3.1 — Python library for the YUYAY Intelligence Framework.",
       },
     ],
   },
