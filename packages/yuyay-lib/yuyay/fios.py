@@ -19,6 +19,7 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
+
 from yuyay.archetypes import ALL_ARCHETYPES
 from yuyay.transformers import ALL_TRANSFORMERS
 
@@ -395,7 +396,7 @@ class OpenAIAdapter(LLMProvider):
             start = time.monotonic()
             completion = await client.chat.completions.create(
                 model=self.config.model,
-                max_tokens=self.config.max_tokens,
+                max_completion_tokens=self.config.max_tokens,
                 messages=[
                     {"role": "system", "content": context},
                     {"role": "user", "content": prompt},
