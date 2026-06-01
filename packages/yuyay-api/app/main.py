@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import os
+
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -20,6 +25,18 @@ from app.routers import (
     sessions,
     transformers,
     wheel,
+)
+
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN"),
+    integrations=[
+        FastApiIntegration(),
+        SqlalchemyIntegration(),
+    ],
+    traces_sample_rate=1.0,
+    send_default_pii=True,
+    enable_logs=True,
+    environment=os.environ.get("ENVIRONMENT", "production"),
 )
 
 logger = get_logger(__name__)

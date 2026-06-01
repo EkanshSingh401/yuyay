@@ -13,6 +13,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "yuyay>=0.1.0",
     "sqlalchemy>=2.0.0",
+    "sentry-sdk[fastapi]>=2.61.1",
     "alembic>=1.18.0",
     "aiosqlite>=0.22.0",
     "asyncpg>=0.30.0",
