@@ -1,2 +1,2 @@
 [deploy]
-startCommand = "./start.sh"
+startCommand = "cd /app && ./start.sh"
