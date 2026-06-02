@@ -85,12 +85,6 @@ app.include_router(metrics.router)
 app.include_router(query.router)
 
 
-@app.get("/api/v1/sentry-debug")
-async def trigger_error() -> None:
-    """Temporary endpoint to verify Sentry error tracking."""
-    raise ZeroDivisionError("Sentry test error")
-
-
 @app.get("/api/v1/health")
 async def health_check() -> dict[str, str]:
     """Health check endpoint for monitoring.
