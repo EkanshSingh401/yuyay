@@ -1,0 +1,18 @@
+prometheus.scrape "yuyay_api" {
+  targets = [
+    {"__address__" = "localhost:8080", "__metrics_path__" = "/api/v1/prometheus"},
+  ]
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "15s"
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = "https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push"
+
+    basic_auth {
+      username = "3277784"
+      password = env("GRAFANA_API_TOKEN")
+    }
+  }
+}
