@@ -21,7 +21,6 @@ COPY yuyay-api/app ./app
 COPY yuyay-api/alembic ./alembic
 COPY yuyay-api/alembic.ini .
 COPY yuyay-api/alloy ./alloy
-COPY yuyay-api/start.sh ./start.sh
 
 # ── Stage 2: Production ───────────────────────────────────────────────────────
 FROM python:3.12-slim AS production
@@ -51,10 +50,6 @@ COPY --from=builder /app/app ./app
 COPY --from=builder /app/alembic ./alembic
 COPY --from=builder /app/alembic.ini .
 COPY --from=builder /app/alloy ./alloy
-COPY --from=builder /app/start.sh ./start.sh
-
-# Make startup script executable
-RUN chmod +x ./start.sh
 
 # Create Alloy data directory with correct permissions
 RUN mkdir -p /app/data-alloy && chown -R appuser:appgroup /app/data-alloy
@@ -65,4 +60,4 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-CMD ["./start.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
