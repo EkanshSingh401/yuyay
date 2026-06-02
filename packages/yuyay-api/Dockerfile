@@ -36,7 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     && wget -q https://github.com/grafana/alloy/releases/latest/download/alloy-linux-amd64.zip -O alloy.zip \
     && unzip alloy.zip \
-    && mv alloy /usr/local/bin/alloy \
+    && mv alloy-linux-amd64 /usr/local/bin/alloy \
     && chmod +x /usr/local/bin/alloy \
     && rm alloy.zip \
     && rm -rf /var/lib/apt/lists/*
