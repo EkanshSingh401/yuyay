@@ -57,5 +57,4 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Run Alloy and uvicorn together
 CMD ["sh", "-c", "alloy run ./alloy/config.alloy & uvicorn app.main:app --host 0.0.0.0 --port $PORT"]
