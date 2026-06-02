@@ -56,6 +56,9 @@ COPY --from=builder /app/start.sh ./start.sh
 # Make startup script executable
 RUN chmod +x ./start.sh
 
+# Create Alloy data directory with correct permissions
+RUN mkdir -p /app/data-alloy && chown -R appuser:appgroup /app/data-alloy
+
 # Switch to non-root user
 USER appuser
 
