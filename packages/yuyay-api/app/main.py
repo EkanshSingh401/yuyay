@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import subprocess
+import threading
 import time
 from typing import Any
 
@@ -72,6 +74,19 @@ app.add_middleware(
 )
 
 
+def start_alloy() -> None:
+    """Start Grafana Alloy in a background thread for metrics collection."""
+    try:
+        subprocess.Popen(
+            ["/usr/local/bin/alloy", "run", "/app/alloy/config.alloy"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        logger.info("alloy_started")
+    except Exception as e:
+        logger.warning("alloy_start_failed", error=str(e))
+
+
 @app.middleware("http")
 async def prometheus_middleware(request: Request, call_next: Any) -> Any:
     """Track request count and duration for Prometheus.
@@ -103,9 +118,10 @@ async def prometheus_middleware(request: Request, call_next: Any) -> Any:
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    """Initialize the database and logging on application startup."""
+    """Initialize the database, logging, and Grafana Alloy on application startup."""
     configure_logging()
     await init_db()
+    threading.Thread(target=start_alloy, daemon=True).start()
     logger.info("startup_complete", version="0.1.0")
 
 
