@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import os
+import time
+from typing import Any
 
 import sentry_sdk
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -16,6 +20,7 @@ from slowapi.util import get_remote_address
 
 from app.db import init_db
 from app.logger import configure_logging, get_logger
+from app.prometheus import http_request_duration_seconds, http_requests_total
 from app.routers import (
     archetypes,
     compare,
@@ -67,6 +72,35 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def prometheus_middleware(request: Request, call_next: Any) -> Any:
+    """Track request count and duration for Prometheus.
+
+    Args:
+        request: The incoming HTTP request.
+        call_next: The next middleware or endpoint handler.
+
+    Returns:
+        The HTTP response.
+    """
+    start_time = time.monotonic()
+    response = await call_next(request)
+    duration = time.monotonic() - start_time
+
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=request.url.path,
+        status_code=str(response.status_code),
+    ).inc()
+
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=request.url.path,
+    ).observe(duration)
+
+    return response
+
+
 @app.on_event("startup")
 async def startup_event() -> None:
     """Initialize the database and logging on application startup."""
@@ -93,3 +127,16 @@ async def health_check() -> dict[str, str]:
         A dict with status and version information.
     """
     return {"status": "ok", "version": "0.1.0"}
+
+
+@app.get("/api/v1/prometheus")
+async def prometheus_metrics() -> Response:
+    """Expose Prometheus metrics in text format.
+
+    Returns:
+        Prometheus-formatted metrics as plain text.
+    """
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )

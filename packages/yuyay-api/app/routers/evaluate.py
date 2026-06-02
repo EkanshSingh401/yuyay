@@ -14,6 +14,12 @@ from app.auth import get_current_user
 from app.db import get_session
 from app.logger import get_logger
 from app.models import EvaluationSession
+from app.prometheus import (
+    evaluations_total,
+    no_responses_total,
+    po_responses_total,
+    yes_responses_total,
+)
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["evaluate"])
@@ -97,6 +103,11 @@ async def evaluate(
         total=report.total,
         user=current_user,
     )
+
+    evaluations_total.inc()
+    yes_responses_total.inc(report.yes_count)
+    no_responses_total.inc(report.no_count)
+    po_responses_total.inc(report.po_count)
 
     return EvaluateResponse(
         session_id=session.id,

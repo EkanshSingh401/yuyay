@@ -9,6 +9,11 @@ from tenacity import RetryError
 from yuyay.fios import FIOS, FIOSConfig
 
 from app.auth import get_current_user
+from app.prometheus import (
+    llm_cost_usd_total,
+    llm_queries_total,
+    llm_query_duration_seconds,
+)
 
 router = APIRouter(prefix="/api/v1", tags=["query"])
 
@@ -107,6 +112,13 @@ async def query(
         )
         fios = FIOS(config)
         result = await fios.query(request_body.prompt)
+        llm_queries_total.labels(provider=request_body.provider).inc()
+        llm_query_duration_seconds.labels(provider=request_body.provider).observe(
+            result.latency_ms / 1000
+        )
+        llm_cost_usd_total.labels(provider=request_body.provider).inc(
+            result.estimated_cost_usd
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except RetryError as e:

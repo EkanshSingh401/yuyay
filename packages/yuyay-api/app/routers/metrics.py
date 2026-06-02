@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
@@ -9,32 +11,34 @@ from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1", tags=["metrics"])
 
+_start_time = time.monotonic()
+
 
 class MetricsResponse(BaseModel):
-    """Prometheus-compatible metrics response.
+    """JSON metrics response for the dashboard.
 
     Attributes:
-        requests_total: Total number of requests served.
         uptime_seconds: Server uptime in seconds.
         version: Current API version.
+        prometheus_url: URL to Prometheus metrics endpoint.
     """
 
-    requests_total: int
     uptime_seconds: float
     version: str
+    prometheus_url: str
 
 
 @router.get("/metrics")
 async def get_metrics(
     current_user: str = Depends(get_current_user),
 ) -> MetricsResponse:
-    """Return Prometheus-compatible metrics.
+    """Return basic server metrics and link to Prometheus endpoint.
 
     Returns:
-        A MetricsResponse with basic server metrics.
+        A MetricsResponse with uptime and Prometheus URL.
     """
     return MetricsResponse(
-        requests_total=0,
-        uptime_seconds=0.0,
+        uptime_seconds=round(time.monotonic() - _start_time, 2),
         version="0.1.0",
+        prometheus_url="/api/v1/prometheus",
     )
