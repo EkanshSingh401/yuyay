@@ -6,7 +6,7 @@ aggregation, and loads results into analytics tables.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import Integer, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -165,7 +165,7 @@ async def compute_archetype_analytics(db: AsyncSession) -> None:
             total_flagged=int(row.total_flagged or 0),
             average_score=float(row.average_score or 0.0),
             flag_rate=flag_rate,
-            computed_at=datetime.now(timezone.utc),
+            computed_at=datetime.utcnow(),
         )
         db.add(analytics)
 
@@ -176,9 +176,7 @@ async def compute_daily_metrics(db: AsyncSession) -> None:
     Args:
         db: Database session.
     """
-    today = datetime.now(timezone.utc).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
     eval_result = await db.execute(
         select(
@@ -209,7 +207,7 @@ async def compute_daily_metrics(db: AsyncSession) -> None:
             total_po_responses=int(eval_row.po or 0),
             total_cost_usd=float(fios_row.total_cost or 0.0),
             average_coherence_score=float(fios_row.avg_coherence or 0.0),
-            computed_at=datetime.now(timezone.utc),
+            computed_at=datetime.utcnow(),
         )
     )
 
