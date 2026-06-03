@@ -26,6 +26,7 @@ from app.prometheus import http_request_duration_seconds, http_requests_total
 from app.routers import (
     archetypes,
     compare,
+    etl,
     evaluate,
     metrics,
     query,
@@ -133,6 +134,7 @@ app.include_router(wheel.router)
 app.include_router(sessions.router)
 app.include_router(metrics.router)
 app.include_router(query.router)
+app.include_router(etl.router)
 
 
 @app.get("/api/v1/health")
