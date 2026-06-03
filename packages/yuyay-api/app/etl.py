@@ -20,6 +20,7 @@ from app.models import (
     FIOSQuery,
     TransformerResult,
 )
+from app.validators import validate_evaluation_responses
 
 logger = get_logger(__name__)
 
@@ -71,6 +72,12 @@ async def transform_and_load_archetype_scores(
 
     responses: dict[str, str] = eval_session.responses or {}
     flags: list[str] = eval_session.flags or []
+    # Validate before loading
+    try:
+        validate_evaluation_responses(eval_session.id, responses)
+    except Exception as e:
+        logger.warning("validation_failed", session_id=eval_session.id, error=str(e))
+        return
 
     for archetype_name, question_ids in archetype_question_map.items():
         scores = []
