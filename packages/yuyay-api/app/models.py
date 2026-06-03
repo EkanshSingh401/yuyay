@@ -62,10 +62,16 @@ class EvaluationSession(Base):
     user_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     archetype_scores: Mapped[list[ArchetypeScore]] = relationship(
-        "ArchetypeScore", back_populates="session", cascade="all, delete-orphan"
+        "ArchetypeScore",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        lazy="raise",
     )
     transformer_results: Mapped[list[TransformerResult]] = relationship(
-        "TransformerResult", back_populates="session", cascade="all, delete-orphan"
+        "TransformerResult",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        lazy="raise",
     )
 
 
