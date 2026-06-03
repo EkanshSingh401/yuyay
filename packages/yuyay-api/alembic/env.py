@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -51,17 +50,18 @@ def do_run_migrations(connection: object) -> None:
 
 async def run_migrations_online() -> None:
     """Run migrations in online mode with a live async database connection."""
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+    import os
+
+    configuration = config.get_section(config.config_ini_section, {})
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        configuration["sqlalchemy.url"] = database_url
+
+    engine = async_engine_from_config(
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-    async with connectable.connect() as connection:
+    async with engine.connect() as connection:
         await connection.run_sync(do_run_migrations)
-    await connectable.dispose()
-
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    asyncio.run(run_migrations_online())
+    await engine.dispose()
