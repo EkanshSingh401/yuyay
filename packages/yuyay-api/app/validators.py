@@ -6,74 +6,46 @@ loading into PostgreSQL to ensure data integrity.
 
 from __future__ import annotations
 
+import pandas as pd
 import pandera as pa
-from pandera.typing import Series
 
+VALID_QUESTION_IDS = ["1a", "1b", "2a", "2b", "3", "4", "5", "6", "7", "8", "9", "10"]
+VALID_RESPONSES = ["YES", "NO", "PO"]
+VALID_ARCHETYPES = [
+    "The Seer",
+    "The Architect",
+    "The Bridgebuilder",
+    "The Steward",
+    "The Navigator",
+    "The Maker",
+    "The Catalyst",
+    "The Harmonizer",
+    "The Sage",
+    "The Oracle",
+    "The Alchemist",
+    "The Weaver",
+]
 
-class EvaluationResponseSchema(pa.DataFrameModel):
-    """Schema for validating raw evaluation responses.
+evaluation_response_schema = pa.DataFrameSchema(
+    {
+        "session_id": pa.Column(str, pa.Check(lambda s: s.str.len() > 0)),
+        "question_id": pa.Column(str, pa.Check.isin(VALID_QUESTION_IDS)),
+        "response": pa.Column(str, pa.Check.isin(VALID_RESPONSES)),
+    },
+    strict=True,
+    coerce=True,
+)
 
-    Validates that each response has a valid question ID
-    and a valid YES/NO/PO response value.
-    """
-
-    question_id: Series[str] = pa.Field(
-        isin=["1a", "1b", "2a", "2b", "3", "4", "5", "6", "7", "8", "9", "10"],
-        description="Valid transformer question ID",
-    )
-    response: Series[str] = pa.Field(
-        isin=["YES", "NO", "PO"],
-        description="Valid YES/NO/PO response",
-    )
-    session_id: Series[str] = pa.Field(
-        str_length_min=1,
-        description="Non-empty session ID",
-    )
-
-    class Config:
-        strict = True
-        coerce = True
-
-
-class ArchetypeScoreSchema(pa.DataFrameModel):
-    """Schema for validating computed archetype scores.
-
-    Validates that scores are in range and archetype names are valid.
-    """
-
-    session_id: Series[str] = pa.Field(
-        str_length_min=1,
-        description="Non-empty session ID",
-    )
-    archetype_name: Series[str] = pa.Field(
-        isin=[
-            "The Seer",
-            "The Architect",
-            "The Bridgebuilder",
-            "The Steward",
-            "The Navigator",
-            "The Maker",
-            "The Catalyst",
-            "The Harmonizer",
-            "The Sage",
-            "The Oracle",
-            "The Alchemist",
-            "The Weaver",
-        ],
-        description="Valid YUYAY archetype name",
-    )
-    score: Series[int] = pa.Field(
-        ge=0,
-        le=100,
-        description="Score between 0 and 100",
-    )
-    flagged: Series[bool] = pa.Field(
-        description="Whether this archetype was flagged",
-    )
-
-    class Config:
-        strict = True
-        coerce = True
+archetype_score_schema = pa.DataFrameSchema(
+    {
+        "session_id": pa.Column(str, pa.Check(lambda s: s.str.len() > 0)),
+        "archetype_name": pa.Column(str, pa.Check.isin(VALID_ARCHETYPES)),
+        "score": pa.Column(int, [pa.Check.ge(0), pa.Check.le(100)]),
+        "flagged": pa.Column(bool),
+    },
+    strict=True,
+    coerce=True,
+)
 
 
 def validate_evaluation_responses(
@@ -92,14 +64,12 @@ def validate_evaluation_responses(
     Raises:
         pa.errors.SchemaError: If any response fails validation.
     """
-    import pandas as pd
-
     rows = [
         {"session_id": session_id, "question_id": qid, "response": resp}
         for qid, resp in responses.items()
     ]
     df = pd.DataFrame(rows)
-    validated = EvaluationResponseSchema.validate(df)
+    validated = evaluation_response_schema.validate(df)
     return validated.to_dict(orient="records")  # type: ignore[return-value]
 
 
@@ -117,8 +87,6 @@ def validate_archetype_scores(
     Raises:
         pa.errors.SchemaError: If any score fails validation.
     """
-    import pandas as pd
-
     df = pd.DataFrame(scores)
-    validated = ArchetypeScoreSchema.validate(df)
+    validated = archetype_score_schema.validate(df)
     return validated.to_dict(orient="records")  # type: ignore[return-value]

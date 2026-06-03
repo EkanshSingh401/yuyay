@@ -30,6 +30,7 @@ dependencies = [
     "openai>=1.82.0",
     "google-genai>=1.0.0",
     "pandera>=0.20.0",
+    "pandas>=2.0.0",
 ]
 
 [project.optional-dependencies]
