@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import Integer, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.logger import get_logger
@@ -147,7 +147,7 @@ async def compute_archetype_analytics(db: AsyncSession) -> None:
         select(
             ArchetypeScore.archetype_name,
             func.count(ArchetypeScore.id).label("total_sessions"),
-            func.sum(ArchetypeScore.flagged.cast(type_=None)).label("total_flagged"),
+            func.sum(ArchetypeScore.flagged.cast(Integer)).label("total_flagged"),
             func.avg(ArchetypeScore.score).label("average_score"),
         ).group_by(ArchetypeScore.archetype_name)
     )
