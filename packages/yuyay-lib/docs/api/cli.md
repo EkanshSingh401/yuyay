@@ -1,0 +1,3 @@
+# CLI
+
+::: yuyay.cli

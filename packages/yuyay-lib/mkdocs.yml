@@ -1,0 +1,41 @@
+site_name: YUYAY Intelligence Framework
+site_description: A multi-dimensional intelligence framework for evaluating alignment across 12 archetype dimensions
+site_url: https://ekanshsingh401.github.io/yuyay
+repo_url: https://github.com/EkanshSingh401/yuyay
+repo_name: EkanshSingh401/yuyay
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            docstring_style: google
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - API Reference:
+    - Archetypes: api/archetypes.md
+    - Transformers: api/transformers.md
+    - Questionnaire: api/questionnaire.md
+    - FIOS: api/fios.md
+    - Wheel: api/wheel.md
+    - PO: api/po.md
+    - CLI: api/cli.md
+  - Contributing: contributing.md

@@ -5,6 +5,8 @@
 [![PyPI version](https://img.shields.io/pypi/v/yuyay)](https://pypi.org/project/yuyay/)
 [![Python versions](https://img.shields.io/pypi/pyversions/yuyay)](https://pypi.org/project/yuyay/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-github--pages-blue)](https://ekanshsingh401.github.io/yuyay/)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/EkanshSingh401/yuyay/blob/main/LICENSE)
 
 A multi-dimensional intelligence framework for evaluating alignment across 12 archetype dimensions — developed for the UN Office of the Future by Mitchell Gold.
 
@@ -12,6 +14,7 @@ A multi-dimensional intelligence framework for evaluating alignment across 12 ar
 **API docs:** [yuyay-production-2e45.up.railway.app/docs](https://yuyay-production-2e45.up.railway.app/docs)  
 **PyPI:** [pypi.org/project/yuyay](https://pypi.org/project/yuyay/)  
 **GitHub:** [github.com/EkanshSingh401/yuyay](https://github.com/EkanshSingh401/yuyay)
+- **Docs:** [ekanshsingh401.github.io/yuyay](https://ekanshsingh401.github.io/yuyay/)
 
 ---
 

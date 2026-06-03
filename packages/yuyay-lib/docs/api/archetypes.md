@@ -1,0 +1,3 @@
+# Archetypes
+
+::: yuyay.archetypes
