@@ -92,7 +92,6 @@ async def evaluate(
     )
     db.add(session)
     await db.commit()
-    await db.refresh(session)
 
     logger.info(
         "evaluation_complete",
