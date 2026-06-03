@@ -131,6 +131,8 @@ Base URL: `https://yuyay-production-2e45.up.railway.app`
 | GET | `/api/v1/health` | Health check |
 | GET | `/api/v1/metrics` | Platform metrics |
 | GET | `/api/v1/prometheus` | Prometheus metrics endpoint |
+| GET | `/api/v1/archetypes/{name}` | Get single archetype by name |
+| GET | `/api/v1/sessions/{id}` | Get session detail |
 
 Full interactive docs at [/docs](https://yuyay-production-2e45.up.railway.app/docs).
 
@@ -194,7 +196,7 @@ cd packages/yuyay-web && npm install && npm run dev
 - **13,285** total lines of code
 - **90%+** test coverage
 - **8** PostgreSQL tables
-- **13** API endpoints
+- **15** API endpoints
 - **3** LLM providers
 - **12** archetype dimensions
 - **227MB** Docker image (multi-stage build)
