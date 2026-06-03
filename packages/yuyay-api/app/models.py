@@ -65,13 +65,13 @@ class EvaluationSession(Base):
         "ArchetypeScore",
         back_populates="session",
         cascade="all, delete-orphan",
-        lazy="raise",
+        lazy="noload",
     )
     transformer_results: Mapped[list[TransformerResult]] = relationship(
         "TransformerResult",
         back_populates="session",
         cascade="all, delete-orphan",
-        lazy="raise",
+        lazy="noload",
     )
 
 
