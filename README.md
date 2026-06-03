@@ -198,6 +198,9 @@ cd packages/yuyay-web && npm install && npm run dev
 - **3** LLM providers
 - **12** archetype dimensions
 - **227MB** Docker image (multi-stage build)
+- **p95 response time:** 230ms (health/simple endpoints), 400ms (DB-backed endpoints)
+- **Throughput:** 4.4 req/s under 10 concurrent users, 0% error rate
+- **Load tested** with Locust — 127 requests, 0 failures across 10 concurrent users
 
 ---
 
