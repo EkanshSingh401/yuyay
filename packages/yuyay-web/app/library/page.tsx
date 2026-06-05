@@ -21,17 +21,17 @@ const resources: Resource[] = [
     items: [
       {
         label: "REST API, Swagger UI",
-        href: "https://yuyay-production-2e45.up.railway.app/docs",
+        href: "https://yuyay-production-996a.up.railway.app/docs",
         note: "Interactive documentation for all YUYAY Intelligence API endpoints.",
       },
       {
         label: "REST API, ReDoc",
-        href: "https://yuyay-production-2e45.up.railway.app/redoc",
+        href: "https://yuyay-production-996a.up.railway.app/redoc",
         note: "Alternative API reference in ReDoc format.",
       },
       {
         label: "OpenAPI Specification",
-        href: "https://yuyay-production-2e45.up.railway.app/openapi.json",
+        href: "https://yuyay-production-996a.up.railway.app/openapi.json",
         note: "Machine-readable OpenAPI 3.x schema for the YUYAY Intelligence API.",
       },
     ],
