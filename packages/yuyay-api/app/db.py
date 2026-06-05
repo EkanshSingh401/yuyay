@@ -7,8 +7,6 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from alembic import command  # type: ignore[attr-defined]
-from alembic.config import Config
 from app.models import Base
 
 DATABASE_URL = os.environ.get(
@@ -28,16 +26,7 @@ async_session_factory = async_sessionmaker(
 
 
 async def init_db() -> None:
-    """Run Alembic migrations and create any missing tables on startup.
-
-    Runs alembic upgrade head to apply all pending migrations,
-    then create_all as a fallback for any tables not covered.
-    """
-    try:
-        alembic_cfg = Config("alembic.ini")
-        command.upgrade(alembic_cfg, "head")
-    except Exception:
-        pass
+    """Create any missing tables on startup."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
