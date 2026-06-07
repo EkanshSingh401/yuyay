@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncGenerator
 
-from collection.abc import AsyncGenerator
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
