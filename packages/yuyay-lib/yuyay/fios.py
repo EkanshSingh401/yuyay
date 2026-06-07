@@ -20,6 +20,7 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
+
 from yuyay.archetypes import ALL_ARCHETYPES
 from yuyay.transformers import ALL_TRANSFORMERS
 
@@ -689,7 +690,7 @@ class FIOS:
         """
         return await self.provider.query(prompt)
 
-    async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
+    def stream(self, prompt: str) -> AsyncGenerator[str, None]:
         """Stream tokens from the configured provider.
 
         Args:
