@@ -30,6 +30,7 @@ from app.routers import (
     evaluate,
     metrics,
     query,
+    search,
     sessions,
     transformers,
     wheel,
@@ -135,6 +136,7 @@ app.include_router(sessions.router)
 app.include_router(metrics.router)
 app.include_router(query.router)
 app.include_router(etl.router)
+app.include_router(search.router)
 
 
 @app.get("/api/v1/health")

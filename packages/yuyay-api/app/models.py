@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -259,3 +260,25 @@ class DailyMetrics(Base):
     total_cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     average_coherence_score: Mapped[float] = mapped_column(Float, default=0.0)
     computed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ArchetypeEmbedding(Base):
+    """Vector embedding for an archetype for semantic similarity search.
+
+    Attributes:
+        id: Unique identifier.
+        archetype_name: Name of the archetype.
+        embedding: 1536-dimensional vector from text-embedding-3-small.
+        description: The text that was embedded.
+        created_at: When this embedding was generated.
+    """
+
+    __tablename__ = "archetype_embeddings"
+
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    archetype_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    embedding: Mapped[list] = mapped_column(Vector(1536), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
