@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import json
+
+from collection.abc import AsyncGenerator
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from slowapi import Limiter
 from tenacity import RetryError
@@ -146,4 +150,52 @@ async def query(
         flags=result.flags,
         estimated_cost_usd=result.estimated_cost_usd,
         summary=result.summary(),
+    )
+
+
+@router.post("/query/stream")
+@limiter.limit("3/minute;20/day")
+async def query_stream(
+    request: Request,
+    request_body: QueryRequest,
+    current_user: str = Depends(get_current_user),
+) -> StreamingResponse:
+    """Stream LLM tokens via Server-Sent Events as they are generated.
+
+    Returns tokens as they arrive from the LLM provider rather than
+    waiting for the full response. Use EventSource or fetch with
+    ReadableStream on the frontend to render tokens in real time.
+
+    Args:
+        request: The incoming HTTP request, required by slowapi.
+        request_body: The request body with prompt, provider, model, api_key.
+        current_user: The authenticated user from JWT token.
+
+    Returns:
+        A StreamingResponse with text/event-stream content type.
+    """
+
+    async def generate() -> AsyncGenerator[str, None]:
+        try:
+            config = FIOSConfig(
+                provider=request_body.provider,
+                model=request_body.model,
+                api_key=request_body.api_key,
+            )
+            fios = FIOS(config)
+            async for token in fios.stream(request_body.prompt):  # type: ignore[attr-defined]
+                yield f"data: {json.dumps({'token': token})}\n\n"
+            yield "data: [DONE]\n\n"
+        except ValueError as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': f'Stream failed: {str(e)}'})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )

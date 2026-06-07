@@ -10,6 +10,7 @@ import abc
 import asyncio
 import os
 import time
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -19,7 +20,6 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-
 from yuyay.archetypes import ALL_ARCHETYPES
 from yuyay.transformers import ALL_TRANSFORMERS
 
@@ -286,6 +286,18 @@ class LLMProvider(abc.ABC):
         """
         ...
 
+    @abc.abstractmethod
+    def stream(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Stream tokens from the LLM as they are generated.
+
+        Args:
+            prompt: The full enriched prompt to send.
+
+        Yields:
+            Text tokens as they arrive from the LLM.
+        """
+        ...
+
 
 class AnthropicAdapter(LLMProvider):
     """FIOS adapter for Anthropic Claude API."""
@@ -356,6 +368,26 @@ class AnthropicAdapter(LLMProvider):
         except Exception as e:
             self.circuit_breaker.record_failure()
             raise e
+
+    async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Stream tokens from Claude as they are generated."""
+        if self.circuit_breaker.is_open():
+            raise RuntimeError(f"Circuit breaker open for {self.config.provider}")
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(
+            api_key=self.config.api_key or os.environ.get("ANTHROPIC_API_KEY")
+        )
+        context = build_yuyay_context()
+        full_prompt = f"{context}\n\nUser Query: {prompt}"
+        async with client.messages.stream(
+            model=self.config.model,
+            max_tokens=self.config.max_tokens,
+            messages=[{"role": "user", "content": full_prompt}],
+        ) as stream:
+            async for text in stream.text_stream:
+                yield text
+        self.circuit_breaker.record_success()
 
 
 class OpenAIAdapter(LLMProvider):
@@ -430,6 +462,31 @@ class OpenAIAdapter(LLMProvider):
             self.circuit_breaker.record_failure()
             raise e
 
+    async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Stream tokens from GPT as they are generated."""
+        if self.circuit_breaker.is_open():
+            raise RuntimeError(f"Circuit breaker open for {self.config.provider}")
+        import openai
+
+        client = openai.AsyncOpenAI(
+            api_key=self.config.api_key or os.environ.get("OPENAI_API_KEY")
+        )
+        context = build_yuyay_context()
+        stream = await client.chat.completions.create(
+            model=self.config.model,
+            max_completion_tokens=self.config.max_tokens,
+            messages=[
+                {"role": "system", "content": context},
+                {"role": "user", "content": prompt},
+            ],
+            stream=True,
+        )
+        async for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content:
+                yield content
+        self.circuit_breaker.record_success()
+
 
 class GoogleAdapter(LLMProvider):
     """FIOS adapter for Google Gemini API."""
@@ -499,6 +556,25 @@ class GoogleAdapter(LLMProvider):
             self.circuit_breaker.record_failure()
             raise e
 
+    async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Stream tokens from Gemini as they are generated."""
+        if self.circuit_breaker.is_open():
+            raise RuntimeError(f"Circuit breaker open for {self.config.provider}")
+        from google import genai
+
+        client = genai.Client(
+            api_key=self.config.api_key or os.environ.get("GOOGLE_API_KEY")
+        )
+        context = build_yuyay_context()
+        full_prompt = f"{context}\n\nUser Query: {prompt}"
+        async for chunk in await client.aio.models.generate_content_stream(
+            model=self.config.model,
+            contents=full_prompt,
+        ):
+            if chunk.text:
+                yield chunk.text
+        self.circuit_breaker.record_success()
+
 
 class MockAdapter(LLMProvider):
     """Mock FIOS adapter for testing without real API calls."""
@@ -540,6 +616,28 @@ class MockAdapter(LLMProvider):
             flags=flags,
             estimated_cost_usd=0.0,
         )
+
+    async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Stream mock tokens for testing."""
+        words = [
+            "This",
+            " response",
+            " demonstrates",
+            " wisdom,",
+            " compassion,",
+            " and",
+            " purpose.",
+            " It",
+            " considers",
+            " the",
+            " balance",
+            " of",
+            " whole",
+            " systems.",
+        ]
+        for word in words:
+            await asyncio.sleep(0.05)
+            yield word
 
 
 class FIOS:
@@ -590,6 +688,17 @@ class FIOS:
             A FIOSResult with the response and evaluation metadata.
         """
         return await self.provider.query(prompt)
+
+    async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Stream tokens from the configured provider.
+
+        Args:
+            prompt: The user query to stream.
+
+        Returns:
+            An async generator yielding text tokens from the LLM.
+        """
+        return self.provider.stream(prompt)
 
     async def query_all_providers(
         self,
