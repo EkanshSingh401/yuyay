@@ -197,5 +197,7 @@ async def query_stream(
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
+            "Transfer-Encoding": "chunked",
+            "Connection": "keep-alive",
         },
     )
