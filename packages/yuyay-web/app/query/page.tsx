@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -17,7 +17,7 @@ interface QueryResult {
   summary: string;
 }
 
-type Phase = "idle" | "loading" | "results" | "error";
+type Phase = "idle" | "streaming" | "results" | "error";
 
 const PROVIDERS = [
   { value: "anthropic", label: "Anthropic Claude", model: "claude-sonnet-4-6" },
@@ -30,6 +30,7 @@ export default function QueryPage() {
   const [prompt, setPrompt] = useState("");
   const [provider, setProvider] = useState("anthropic");
   const [phase, setPhase] = useState<Phase>("idle");
+  const [streamedText, setStreamedText] = useState("");
   const [result, setResult] = useState<QueryResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -37,11 +38,15 @@ export default function QueryPage() {
 
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
-    setPhase("loading");
+    setPhase("streaming");
+    setStreamedText("");
     setResult(null);
+
     try {
       const token = await getToken();
-      const res = await fetch(`${API}/api/v1/query`, {
+
+      // First stream the response for real-time display
+      const res = await fetch(`${API}/api/v1/query/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,18 +59,67 @@ export default function QueryPage() {
           api_key: "",
         }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail ?? "Query failed.");
+
+      if (!res.ok || !res.body) {
+        throw new Error("Stream request failed.");
       }
-      const data: QueryResult = await res.json();
-      setResult(data);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.token) {
+              accumulated += parsed.token;
+              setStreamedText(accumulated);
+            }
+            if (parsed.error) throw new Error(parsed.error);
+          } catch {
+            // skip malformed chunks
+          }
+        }
+      }
+
+      // Then fetch full metadata from batch endpoint
+      const metaRes = await fetch(`${API}/api/v1/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          prompt,
+          provider,
+          model: selectedProvider.model,
+          api_key: "",
+        }),
+      });
+
+      if (metaRes.ok) {
+        const data: QueryResult = await metaRes.json();
+        setResult(data);
+      }
+
       setPhase("results");
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : "An unknown error occurred.");
       setPhase("error");
     }
   };
+
+  const displayText = phase === "results" && result ? result.response : streamedText;
 
   return (
     <main className="pt-nav">
@@ -126,10 +180,10 @@ export default function QueryPage() {
           <button
             className="btn btn-primary"
             onClick={handleSubmit}
-            disabled={!prompt.trim() || phase === "loading"}
-            style={{ opacity: prompt.trim() && phase !== "loading" ? 1 : 0.4, cursor: prompt.trim() && phase !== "loading" ? "pointer" : "not-allowed" }}
+            disabled={!prompt.trim() || phase === "streaming"}
+            style={{ opacity: prompt.trim() && phase !== "streaming" ? 1 : 0.4, cursor: prompt.trim() && phase !== "streaming" ? "pointer" : "not-allowed" }}
           >
-            {phase === "loading" ? "Querying…" : "Send Query"}
+            {phase === "streaming" ? "Streaming…" : "Send Query"}
           </button>
         </div>
       </section>
@@ -143,73 +197,68 @@ export default function QueryPage() {
         </section>
       )}
 
-      {/* Results */}
-      {phase === "results" && result && (
+      {/* Streaming + Results */}
+      {(phase === "streaming" || phase === "results") && displayText && (
         <section style={{ padding: "4rem 0 6rem", borderTop: "1px solid var(--border)" }}>
           <div className="container-narrow">
-            <span className="eyebrow" style={{ marginBottom: "1.2rem" }}>
-              Response
-            </span>
-
-            {/* Meta */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5, 1fr)",
-                gap: 0,
-                border: "1px solid var(--border)",
-                marginBottom: "2rem",
-              }}
-            >
-              {[
-                { label: "Provider", value: `${result.provider}` },
-                { label: "Coherence", value: `${result.coherence_score}/100` },
-                { label: "Tokens", value: `${result.total_tokens}` },
-                { label: "Latency", value: `${result.latency_ms.toFixed(0)}ms` },
-                { label: "Cost", value: `$${result.estimated_cost_usd.toFixed(6)}` },
-              ].map((m, i) => (
-                <div
-                  key={m.label}
-                  style={{
-                    padding: "1.5rem",
-                    textAlign: "center",
-                    borderRight: i < 4 ? "1px solid var(--border)" : undefined,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: "var(--font-playfair)",
-                      fontSize: "1.1rem",
-                      color: "var(--gold)",
-                      lineHeight: 1,
-                      marginBottom: "0.4rem",
-                    }}
-                  >
-                    {m.value}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.68rem",
-                      letterSpacing: "0.2em",
-                      textTransform: "uppercase",
-                      color: "var(--muted)",
-                    }}
-                  >
-                    {m.label}
-                  </div>
-                </div>
-              ))}
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.2rem" }}>
+              <span className="eyebrow">Response</span>
+              {phase === "streaming" && (
+                <span style={{ fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--gold)", opacity: 0.7 }}>
+                  ● streaming
+                </span>
+              )}
             </div>
+
+            {/* Metadata — shown after streaming completes */}
+            {phase === "results" && result && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, 1fr)",
+                  gap: 0,
+                  border: "1px solid var(--border)",
+                  marginBottom: "2rem",
+                }}
+              >
+                {[
+                  { label: "Provider", value: result.provider },
+                  { label: "Coherence", value: `${result.coherence_score}/100` },
+                  { label: "Tokens", value: `${result.total_tokens}` },
+                  { label: "Latency", value: `${result.latency_ms.toFixed(0)}ms` },
+                  { label: "Cost", value: `$${result.estimated_cost_usd.toFixed(6)}` },
+                ].map((m, i) => (
+                  <div
+                    key={m.label}
+                    style={{
+                      padding: "1.5rem",
+                      textAlign: "center",
+                      borderRight: i < 4 ? "1px solid var(--border)" : undefined,
+                    }}
+                  >
+                    <div style={{ fontFamily: "var(--font-playfair)", fontSize: "1.1rem", color: "var(--gold)", lineHeight: 1, marginBottom: "0.4rem" }}>
+                      {m.value}
+                    </div>
+                    <div style={{ fontSize: "0.68rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--muted)" }}>
+                      {m.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Response text */}
             <div style={{ padding: "2rem 2.5rem", border: "1px solid var(--border)", background: "var(--surface)", marginBottom: "2rem" }}>
               <p style={{ fontSize: "1.05rem", color: "var(--secondary)", lineHeight: 1.9, whiteSpace: "pre-wrap" }}>
-                {result.response}
+                {displayText}
+                {phase === "streaming" && (
+                  <span style={{ display: "inline-block", width: "2px", height: "1.1em", background: "var(--gold)", marginLeft: "2px", verticalAlign: "text-bottom", animation: "blink 1s step-end infinite" }} />
+                )}
               </p>
             </div>
 
             {/* Flags */}
-            {result.flags.length > 0 && (
+            {phase === "results" && result && result.flags.length > 0 && (
               <div>
                 <p style={{ fontSize: "0.62rem", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--amber)", marginBottom: "0.8rem" }}>
                   Missing YUYAY concepts
@@ -224,6 +273,13 @@ export default function QueryPage() {
           </div>
         </section>
       )}
+
+      <style>{`
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
     </main>
   );
 }
