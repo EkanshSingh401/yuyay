@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import AsyncGenerator
 
@@ -28,7 +29,8 @@ def get_user_key(request: Request) -> str:
     """
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
-        return f"user:{auth.split(' ')[1][:20]}"
+        token = auth.split(" ")[1]
+        return f"user:{hashlib.md5(token.encode()).hexdigest()}"
     return request.client.host if request.client else "unknown"
 
 
